@@ -8,6 +8,7 @@ export type Point = { lat: number; lng: number };
 export type FacilityInput = {name:string;address:string;point:Point;region:'seoul'|'incheon';registration:'operator'|'map_search'|'manual_pin';sourceUrl:string|null;evidence:string};
 export type Facility = Omit<FacilityInput,'evidence'> & {id:Id;registeredBy:Id|null;locationStatus:'unverified'|'verified';basketballUseStatus:'unverified'|'verified';verifiedAt:UtcInstant|null};
 export type PlaceCandidate = {providerId:string;name:string;address:string;point:Point};
+export type PlatformAdapter={kind:'web'|'ios'|'android';openExternal(url:string):Promise<void>;subscribeToLinks(listener:(url:string)=>void):Promise<()=>void>};
 export type PgCost = { status: 'unconfirmed'; amountKrw: null; bearer: null; reason: string };
 export type PricingSnapshot = {
   baseFeeKrw: Won; platformRateBps: 0 | 500 | 1000;

@@ -16,8 +16,16 @@ function limit(request:Request) {
 }
 
 export async function readBody(request: Request): Promise<Record<string, unknown>> {
-  const text = await request.text();
-  if (text.length > 65536) throw new ApiError('INVALID_INPUT', 400);
+  if(!request.body) throw new ApiError('INVALID_INPUT',400);
+  const reader=request.body.getReader(),chunks:Uint8Array[]=[];let length=0;
+  while(true) {
+    const chunk=await reader.read();if(chunk.done) break;
+    length+=chunk.value.byteLength;
+    if(length>65536) {await reader.cancel();throw new ApiError('INVALID_INPUT',400);}
+    chunks.push(chunk.value);
+  }
+  const bytes=new Uint8Array(length);let offset=0;for(const chunk of chunks) {bytes.set(chunk,offset);offset+=chunk.byteLength;}
+  const text=new TextDecoder().decode(bytes);
   try {
     const value: unknown = JSON.parse(text);
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('NOT_OBJECT');

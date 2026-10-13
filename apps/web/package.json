@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@basket/core": "workspace:*",
+    "@basket/mobile": "workspace:*",
     "@supabase/supabase-js": "2.117.3"
   }
 }
