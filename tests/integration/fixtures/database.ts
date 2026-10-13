@@ -54,6 +54,7 @@ export async function createDatabaseFixture() {
       const ids = names.map(name=>users[name].actor.userId);
       await sql`delete from public.activity_records where actor_id in ${sql(ids)}`;
       await sql`delete from public.command_receipts where actor_id in ${sql(ids)}`;
+      await sql`delete from public.facilities where registered_by in ${sql(ids)}`;
       await sql`delete from private.operator_users where user_id in ${sql(ids)}`;
       await sql`delete from public.team_memberships where user_id in ${sql(ids)}`;
       await sql`delete from public.teams where created_by in ${sql(ids)}`;

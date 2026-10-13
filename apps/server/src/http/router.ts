@@ -2,6 +2,18 @@ import { ApiError, readBearer, requireActor } from './auth';
 import { createDatabase } from '../infra/database';
 import type { Env } from '../infra/database';
 import { createAccounts } from '../features/accounts/handlers';
+import { createFacilities } from '../features/facilities/handlers';
+import { searchPlaces } from '../features/facilities/kakao-local';
+
+// 기본 호출 제한은 로컬·단일 Worker 검증용. 운영은 공유 제한을 연결해야 합니다.
+const calls=new Map<string,{until:number;count:number}>();
+function limit(request:Request) {
+ const now=Date.now(),key=request.headers.get('cf-connecting-ip') || 'local';
+ for(const [id,value] of calls) if(value.until<now) calls.delete(id);
+ const bucket=calls.get(key) || {until:now+60000,count:0};
+ if(++bucket.count>30) throw new ApiError('RATE_LIMITED',429);
+ calls.set(key,bucket);
+}
 
 export async function readBody(request: Request): Promise<Record<string, unknown>> {
   const text = await request.text();
@@ -16,6 +28,13 @@ export async function readBody(request: Request): Promise<Record<string, unknown
 export async function routeRequest(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   const path = url.pathname;
+  if(path==='/api/facilities' && request.method==='GET') return Response.json(await createFacilities(createDatabase(env),env).list(),{headers:{'cache-control':'no-store'}});
+  if(path==='/api/places' && request.method==='GET') {limit(request);return Response.json(await searchPlaces(url.searchParams.get('q') || '',env.KAKAO_REST_KEY),{headers:{'cache-control':'no-store'}});}
+  if(path==='/api/routes' && request.method==='POST') {limit(request);return Response.json(await createFacilities(createDatabase(env),env).estimate(await readBody(request)),{headers:{'cache-control':'no-store'}});}
+  if(path==='/api/facilities' && request.method==='POST') {
+   readBearer(request);const database=createDatabase(env);const actor=await requireActor(request,database);
+   return Response.json(await createFacilities(database,env).save(actor,await readBody(request)),{headers:{'cache-control':'no-store'}});
+  }
   if (path.startsWith('/api/me') || path.startsWith('/api/teams') || path.startsWith('/api/operator')) {
     readBearer(request);
     const database = createDatabase(env);

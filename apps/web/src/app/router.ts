@@ -1,5 +1,7 @@
 import { initializeSession, onSessionChanged } from '../features/auth/session';
 import { preferencesView } from '../features/preferences/view';
+import {searchView} from '../features/search/view';
+import {hostingView} from '../features/facilities/view';
 
 export const routes = [
   ['/matches', '경기 찾기', '⌕'], ['/applications', '참여 내역', '✓'],
@@ -26,6 +28,8 @@ export function mountRouter(root: HTMLElement) {
     }
     main.replaceChildren();
     const title = document.createElement('h2'); title.className = 'page-title'; title.textContent = selected[1]; main.append(title);
+    // 이전 계정·경로의 비동기 응답은 분리된 컨테이너에 남아 현재 화면에 섞이지 않습니다.
+    const panel=document.createElement('div');panel.className='page-view';main.append(panel);
     const card = document.createElement('section'); card.className = 'card empty-state';
     const heading = document.createElement('h3');
     const body = document.createElement('p'); body.className = 'muted';
@@ -40,8 +44,10 @@ export function mountRouter(root: HTMLElement) {
     if (selected[0] === '/matches') {
       const action = document.createElement('a'); action.className = 'btn'; action.href = '#/preferences'; action.textContent = '내 조건 설정'; card.append(action);
     }
-    if (selected[0] === '/preferences') void preferencesView(main);
-    else main.append(card);
+    if (selected[0] === '/preferences') void preferencesView(panel);
+    else if(selected[0]==='/matches') void searchView(panel);
+    else if(selected[0]==='/hosting') void hostingView(panel);
+    else panel.append(card);
   }
   window.addEventListener('hashchange', render); render();
   onSessionChanged(render); void initializeSession();

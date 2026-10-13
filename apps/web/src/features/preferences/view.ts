@@ -2,6 +2,7 @@ import type { Preferences } from '@basket/core/preferences';
 import { validatePreferences } from '@basket/core/preferences';
 import { api, session } from '../auth/session';
 import { authView } from '../auth/view';
+import {mapView} from '../map/view';
 
 const DEVICE_KEY = 'basketball-device-preferences-v1';
 export function defaultPreferences(): Preferences {
@@ -25,7 +26,8 @@ export async function preferencesView(root: HTMLElement) {
   loading.remove();
   const form = document.createElement('form'); form.className = 'card preference-form';
   form.innerHTML = `<h3>내가 갈 수 있는 경기</h3><p class="muted">원하는 일정과 이동 시간을 저장해 두세요.</p>
-    <div class="origin-picker"><label>출발지 위도<input name="lat" type="number" step="any" min="-90" max="90" required></label><label>출발지 경도<input name="lng" type="number" step="any" min="-180" max="180" required></label></div>
+    <p class="origin-label muted">출발지 · 지도에서 위치를 선택해 주세요.</p><button type="button" class="btn sec origin-button">지도에서 출발지 선택</button><div class="origin-map" hidden></div>
+    <details><summary>좌표 직접 입력</summary><div class="origin-picker"><label>출발지 위도<input name="lat" type="number" step="any" min="-90" max="90" required></label><label>출발지 경도<input name="lng" type="number" step="any" min="-180" max="180" required></label></div></details>
     <div class="grid2"><label>이동수단<select name="mode"><option value="subway">지하철 · 도보 포함</option><option value="car">자차</option></select></label><label>최대 이동 시간 (분)<input name="maxMinutes" type="number" min="1" max="1440" required></label></div>
     <p class="muted">지하철 30분, 자차 15분을 기본으로 추천해요. 더 멀리 갈 수 있는 날은 직접 바꿔 주세요.</p>
     <div class="grid2"><label>시작 날짜<input type="date" name="dateFrom" required></label><label>마지막 날짜<input type="date" name="dateTo" required></label></div>
@@ -36,6 +38,14 @@ export async function preferencesView(root: HTMLElement) {
     <p class="muted">종료 시간을 비워두면 끝나는 시간은 제한하지 않아요.</p><button class="btn" type="submit"></button><p class="form-status" role="status"></p>`;
   const field = (name: string) => form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement;
   field('lat').value = String(prefs.origin.lat); field('lng').value = String(prefs.origin.lng);
+  const originMap=form.querySelector<HTMLElement>('.origin-map')!,originLabel=form.querySelector<HTMLElement>('.origin-label')!;
+  const showOrigin=()=>{originLabel.textContent=`출발지 · ${Number(field('lat').value).toFixed(5)}, ${Number(field('lng').value).toFixed(5)}`;};
+  if(readDevicePreferences() || signedIn) showOrigin();
+  form.querySelector<HTMLButtonElement>('.origin-button')!.onclick=()=>{
+    originMap.hidden=!originMap.hidden;
+    if(!originMap.hidden && !originMap.children.length) originMap.append(mapView({type:'pick_point',center:{lat:Number(field('lat').value),lng:Number(field('lng').value)}},event=>{field('lat').value=String(event.point.lat);field('lng').value=String(event.point.lng);showOrigin();}));
+  };
+  (field('lat') as HTMLInputElement).onchange=showOrigin;(field('lng') as HTMLInputElement).onchange=showOrigin;
   for (const name of ['mode', 'maxMinutes', 'dateFrom', 'dateTo'] as const) field(name).value = String(prefs[name]);
   field('earliest').value = clock(prefs.earliestStartMinute); field('latest').value = clock(prefs.latestStartMinute); field('end').value = prefs.latestEndMinute === null ? '' : clock(prefs.latestEndMinute); field('position').value = prefs.position || '';
   const weekdays = form.querySelector<HTMLElement>('.weekdays')!;

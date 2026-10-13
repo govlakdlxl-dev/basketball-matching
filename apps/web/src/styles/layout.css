@@ -31,6 +31,7 @@ label { display:flex; flex-direction:column; gap:5px; font-size:13px; font-weigh
 [hidden] { display:none!important; }
 .stack { display:flex; flex-direction:column; gap:12px; margin-top:12px; }
 main { display:flex; flex-direction:column; gap:16px; }
+.page-view {display:flex;flex-direction:column;gap:16px;}
 .kakao { background:#FEE500; color:#191919; }
 fieldset { border:0; padding:0; margin:0; min-width:0; }
 legend { font-size:13px; font-weight:700; margin-bottom:8px; }
@@ -40,4 +41,20 @@ legend { font-size:13px; font-weight:700; margin-bottom:8px; }
 .local-test { font-size:12px; color:var(--muted); }
 .origin-picker { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .form-status { font-size:13px; }
+.mapbox { border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface); }
+.map-frame {display:block;width:100%;height:280px;border:0; }
+.map-caption {padding:8px 12px;margin:0;font-size:11px; }
+.filter-summary {display:flex;justify-content:space-between;align-items:center;gap:12px; }
+.chip {background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:5px 10px;font-size:12px;font-weight:700; }
+.text-link {font-size:12px;font-weight:700;color:var(--court);text-decoration:none;min-height:32px;display:inline-flex;align-items:center; }
+.section-title {font:400 20px var(--font-display);margin:0; }
+.empty-icon {font-size:36px;line-height:1;color:var(--accent); }
+.empty-state h4,.facility-card h4 {margin:0;font-size:17px; }
+.facility-list {display:flex;flex-direction:column;gap:12px; }
+.facility-number {display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--accent);color:white;font-weight:700; }
+.badge {font-size:10px;padding:4px 7px;border-radius:4px;background:var(--surface-2);color:var(--muted);font-weight:700; }
+.badge.ok {color:var(--ok);background:var(--ok-soft); }.badge.caution {color:var(--warn);background:var(--warn-soft); }
+.facility-card.selected {border-color:var(--court);box-shadow:0 0 0 1px var(--court); }
+.facility-card {scroll-margin-bottom:100px;}
+.grow {flex:1; }.search-button {align-self:end; }
 @media(max-width:350px) { h1 {font-size:29px} .ball-mark {width:54px;height:54px} .grid2 {grid-template-columns:1fr} }

@@ -12,6 +12,7 @@
 2. Docker 실행 후 `pnpm exec supabase start`로 로컬 검증 DB를 준비합니다.
 3. `apps/web/.env.local`에 Supabase 주소·공개 키·지도 JavaScript 키를, `apps/server/.dev.vars`에 Supabase 주소·서버 키를 설정합니다. 두 파일은 Git에 올리지 않습니다.
 4. 각각 터미널에서 `pnpm --filter @basket/server dev`, `pnpm dev`를 실행합니다. 웹 주소는 `http://127.0.0.1:5173`입니다.
+5. 기존 지도 도메인을 유지하는 로컬 실행에서는 `pnpm map:sync` 후 `04_시안_카카오맵`에서 `python3 -m http.server 8000`을 실행합니다. 이미 이 주소에 지도 서버가 실행 중이면 그대로 사용합니다. 지도 `config.js`는 변경하지 않습니다.
 
 카카오맵 키와 카카오 로그인 설정은 다릅니다. 로그인은 Supabase 제공자와 카카오 REST 키·리디렉션 설정이 필요합니다. 개발용 테스트 로그인은 운영 빌드에 제공하지 않습니다.
 

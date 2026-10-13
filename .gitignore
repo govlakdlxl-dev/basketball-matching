@@ -21,3 +21,5 @@ supabase/.branches/
 # 기존 카카오 JavaScript 설정 보존
 **/config.js
 Thumbs.db
+04_시안_카카오맵/map.html
+04_시안_카카오맵/assets/

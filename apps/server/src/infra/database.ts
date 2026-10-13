@@ -5,6 +5,8 @@ export type Env = {
   SUPABASE_URL?: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
   ALLOWED_ORIGINS?: string;
+  KAKAO_REST_KEY?: string;
+  KAKAO_MOBILITY_REST_KEY?: string;
 };
 
 export function createDatabase(env: Env) {
