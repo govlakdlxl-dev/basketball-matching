@@ -1,0 +1,5 @@
+# 카카오 키 (공개 저장소에 올리지 않기)
+**/config.js
+
+.DS_Store
+Thumbs.db
