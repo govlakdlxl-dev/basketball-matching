@@ -24,6 +24,9 @@ export type TermsSnapshot = {
   formatVersion: number; pricing: PricingSnapshot; policy: PolicySnapshot;
 };
 export type CancellationCause = 'personal' | 'host_cancelled' | 'format_change_declined';
+export type RefundRatioBps = 0 | 5000 | 10000;
+export type RefundTotals = {refundedKrw:Won;platformReturnedKrw:Won;teamDeductedKrw:Won};
+export type RefundDelta = {kind:'none'|'refund';target:RefundTotals;additional:RefundTotals};
 export type CancellationReceipt = {
   id: Id; applicationId: Id; matchId: Id; receivedAt: UtcInstant;
   cause: CancellationCause; formatChangeId: Id | null; terms: TermsSnapshot;
