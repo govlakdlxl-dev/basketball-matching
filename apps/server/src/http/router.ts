@@ -14,6 +14,7 @@ import {createPaymentWorker,configuredTestPg} from '../features/payments/worker'
 import {createRefundQueries} from '../features/refunds/queries';
 import {createRefundWorker} from '../features/refunds/worker';
 import {createCheckout} from '../features/payments/checkout';
+import {createNotifications} from '../features/notifications/handlers';
 
 // 기본 호출 제한은 로컬·단일 Worker 검증용. 운영은 공유 제한을 연결해야 합니다.
 const calls=new Map<string,{until:number;count:number}>();
@@ -62,7 +63,7 @@ export async function routeRequest(request: Request, env: Env,context?:{waitUnti
    readBearer(request);const database=createDatabase(env);const actor=await requireActor(request,database);
    return Response.json(await createFacilities(database,env).save(actor,await readBody(request)),{headers:{'cache-control':'no-store'}});
   }
-  if (path.startsWith('/api/me') || path.startsWith('/api/teams') || path.startsWith('/api/operator') || path.startsWith('/api/matches') || path.startsWith('/api/applications') || path.startsWith('/api/test-orders') || path==='/api/issues') {
+  if (path.startsWith('/api/me') || path.startsWith('/api/teams') || path.startsWith('/api/operator') || path.startsWith('/api/matches') || path.startsWith('/api/applications') || path.startsWith('/api/test-orders') || path.startsWith('/api/notifications') || path==='/api/issues') {
     readBearer(request);
     const database = createDatabase(env);
     const actor = await requireActor(request, database);
@@ -70,6 +71,11 @@ export async function routeRequest(request: Request, env: Env,context?:{waitUnti
     const queries=createMatchQueries(database),matchCommands=createMatchCommands(database),applications=createApplicationCommands(database);
     const operations=createOperations(database);
     const json = (value: unknown) => Response.json(value ?? null, { headers: { 'cache-control': 'no-store' } });
+    if(path==='/api/notifications/inbox'&&request.method==='GET')return json(await createNotifications(database).listInbox(actor));
+    const notice=path.match(/^\/api\/notifications\/([^/]+)(\/read)?$/);
+    if(notice&&notice[2]&&request.method==='POST')return json(await createNotifications(database).markNoticeRead(actor,notice[1]));
+    if(notice&&!notice[2]&&request.method==='GET')return json(await createNotifications(database).getInboxNotice(actor,notice[1]));
+    if(path.startsWith('/api/notifications')&&request.method==='POST')throw new ApiError('FORBIDDEN',403);
     if(path==='/api/test-orders'&&request.method==='POST')return json(await createPaymentCommands(database).createTestOrder(actor,await readBody(request)));
     const approval=path.match(/^\/api\/test-orders\/([^/]+)\/approval$/);
     if(approval&&request.method==='POST'){

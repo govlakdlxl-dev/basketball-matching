@@ -60,6 +60,11 @@ export async function createDatabaseFixture() {
       const ownedMatches=await sql`select id from public.matches where created_by in ${sql(ids)}`;
       if(ownedMatches.length) {
         const matches=ownedMatches.map(row=>row.id as string);
+        await sql`delete from public.notification_job_items where job_id in (select id from public.notification_jobs where match_id in ${sql(matches)})`;
+        await sql`delete from public.notification_jobs where match_id in ${sql(matches)}`;
+        await sql`delete from public.notification_event_receipts where event_id in (select id from public.activity_records where match_id in ${sql(matches)})`;
+        await sql`delete from public.notification_reminder_windows where match_id in ${sql(matches)}`;
+        await sql`delete from public.notifications where match_id in ${sql(matches)}`;
         await sql`delete from private.checkout_tickets where order_id in (select id from public.test_orders where match_id in ${sql(matches)})`;
         await sql`delete from public.test_ledger_entries where order_id in (select id from public.test_orders where match_id in ${sql(matches)})`;
         await sql`delete from public.refund_attempts where order_id in (select id from public.test_orders where match_id in ${sql(matches)})`;

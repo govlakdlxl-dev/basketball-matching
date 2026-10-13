@@ -6,6 +6,7 @@ import {matchDetail} from '../features/matches/detail';
 import {applicationsView} from '../features/applications/view';
 import {operatorView} from '../features/operations/view';
 import {checkoutView,paymentReturnView} from '../features/payments/view';
+import {notificationsView} from '../features/notifications/view';
 
 export const routes = [
   ['/matches', '경기 찾기', '⌕'], ['/applications', '참여 내역', '✓'],
@@ -27,14 +28,15 @@ export function mountRouter(root: HTMLElement) {
   function render() {
     const path = location.hash.slice(1) || '/matches';
     const detail=path.match(/^\/matches\/([0-9a-f-]{36})$/i);
+    const noticeDetail=path.match(/^\/notifications\/([0-9a-f-]{36})$/i);
     const inCheckout=entryPath==='/checkout'&&!location.hash,inReturn=entryPath.startsWith('/payment-return/')&&!location.hash;
-    const selected = routes.find(route => route[0] === path) ?? (inCheckout||inReturn?routes[1]:routes[0]);
+    const selected = routes.find(route => route[0] === path) ?? (noticeDetail?routes[2]:inCheckout||inReturn?routes[1]:routes[0]);
     for (const link of nav.querySelectorAll('a')) {
       if (link.getAttribute('href') === `#${selected[0]}`) link.setAttribute('aria-current', 'page');
       else link.removeAttribute('aria-current');
     }
     main.replaceChildren();
-    const title = document.createElement('h2'); title.className = 'page-title'; title.textContent = inCheckout?'테스트 결제':inReturn?'결제 결과':detail?'경기 상세':selected[1]; main.append(title);
+    const title = document.createElement('h2'); title.className = 'page-title'; title.textContent = inCheckout?'테스트 결제':inReturn?'결제 결과':detail?'경기 상세':noticeDetail?'알림 상세':selected[1]; main.append(title);
     // 이전 계정·경로의 비동기 응답은 분리된 컨테이너에 남아 현재 화면에 섞이지 않습니다.
     const panel=document.createElement('div');panel.className='page-view';main.append(panel);
     const card = document.createElement('section'); card.className = 'card empty-state';
@@ -54,11 +56,13 @@ export function mountRouter(root: HTMLElement) {
     if(inCheckout)void checkoutView(panel,entryUrl);
     else if(inReturn)void paymentReturnView(panel,entryUrl);
     else if(path==='/operator') void operatorView(panel);
+    else if(noticeDetail)void notificationsView(panel,noticeDetail[1]);
     else if(detail) void matchDetail(panel,detail[1]!);
     else if (selected[0] === '/preferences') void preferencesView(panel);
     else if(selected[0]==='/applications') void applicationsView(panel);
     else if(selected[0]==='/matches') void searchView(panel);
     else if(selected[0]==='/hosting') void hostingView(panel);
+    else if(selected[0]==='/notifications')void notificationsView(panel);
     else panel.append(card);
   }
   window.addEventListener('hashchange', render); render();
