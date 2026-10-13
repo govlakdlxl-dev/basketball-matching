@@ -8,6 +8,8 @@ import {createMatchCommands} from '../features/matches/commands';
 import {createMatchQueries} from '../features/matches/queries';
 import {createApplicationCommands} from '../features/applications/commands';
 import {createOperations} from '../features/operations/commands';
+import {createPaymentCommands} from '../features/payments/commands';
+import {createPaymentQueries} from '../features/payments/queries';
 
 // 기본 호출 제한은 로컬·단일 Worker 검증용. 운영은 공유 제한을 연결해야 합니다.
 const calls=new Map<string,{until:number;count:number}>();
@@ -50,7 +52,7 @@ export async function routeRequest(request: Request, env: Env): Promise<Response
    readBearer(request);const database=createDatabase(env);const actor=await requireActor(request,database);
    return Response.json(await createFacilities(database,env).save(actor,await readBody(request)),{headers:{'cache-control':'no-store'}});
   }
-  if (path.startsWith('/api/me') || path.startsWith('/api/teams') || path.startsWith('/api/operator') || path.startsWith('/api/matches') || path.startsWith('/api/applications') || path==='/api/issues') {
+  if (path.startsWith('/api/me') || path.startsWith('/api/teams') || path.startsWith('/api/operator') || path.startsWith('/api/matches') || path.startsWith('/api/applications') || path.startsWith('/api/test-orders') || path==='/api/issues') {
     readBearer(request);
     const database = createDatabase(env);
     const actor = await requireActor(request, database);
@@ -58,6 +60,11 @@ export async function routeRequest(request: Request, env: Env): Promise<Response
     const queries=createMatchQueries(database),matchCommands=createMatchCommands(database),applications=createApplicationCommands(database);
     const operations=createOperations(database);
     const json = (value: unknown) => Response.json(value ?? null, { headers: { 'cache-control': 'no-store' } });
+    if(path==='/api/test-orders'&&request.method==='POST')return json(await createPaymentCommands(database).createTestOrder(actor,await readBody(request)));
+    const approval=path.match(/^\/api\/test-orders\/([^/]+)\/approval$/);
+    if(approval&&request.method==='POST')return json(await createPaymentCommands(database).acceptApproval(actor,{...await readBody(request),orderId:approval[1]}));
+    const order=path.match(/^\/api\/test-orders\/([^/]+)$/);
+    if(order&&request.method==='GET')return json(await createPaymentQueries(database).getTestOrder(actor,order[1]));
     if (path === '/api/me' && request.method === 'GET') return json(await accounts.getProfile(actor));
     if(path==='/api/me/applications' && request.method==='GET') return json(await queries.myApplications(actor));
     if(path==='/api/me/hosting' && request.method==='GET') return json(await queries.myHosting(actor));

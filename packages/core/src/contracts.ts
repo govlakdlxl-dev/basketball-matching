@@ -27,6 +27,9 @@ export type CancellationCause = 'personal' | 'host_cancelled' | 'format_change_d
 export type RefundRatioBps = 0 | 5000 | 10000;
 export type RefundTotals = {refundedKrw:Won;platformReturnedKrw:Won;teamDeductedKrw:Won};
 export type RefundDelta = {kind:'none'|'refund';target:RefundTotals;additional:RefundTotals};
+export type PaymentStatus='created'|'approval_pending'|'paid'|'failed'|'unknown'|'needs_review';
+export type TestOrder={id:Id;applicationId:Id;teamId:Id;ownerId:Id;environment:'test';terms:TermsSnapshot;pricingVersion:string;paymentDeadlineAt:UtcInstant;status:PaymentStatus};
+export type ApprovalReceipt={attemptId:Id;orderId:Id;receivedAt:UtcInstant;status:PaymentStatus};
 export type CancellationReceipt = {
   id: Id; applicationId: Id; matchId: Id; receivedAt: UtcInstant;
   cause: CancellationCause; formatChangeId: Id | null; terms: TermsSnapshot;

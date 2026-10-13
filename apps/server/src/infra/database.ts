@@ -17,7 +17,7 @@ export function createDatabase(env: Env) {
     async rpc<T>(name: string, args: Record<string, unknown> = {}): Promise<T> {
       const { data, error } = await client.rpc(name, args);
       if (error) {
-        const status: Record<string, number> = { UNAUTHORIZED: 401, FORBIDDEN: 403, NOT_FOUND: 404, INVALID_INPUT: 400, INVALID_PREFERENCES: 400, REQUEST_ID_CONFLICT: 409,MATCH_STARTED:409,NO_POSITION:409,CAPACITY_FULL:409,INVALID_STATE:409,FORMAT_CHANGED:409,ACTIVE_APPLICATION_EXISTS:409,LATE_CHANGE_NEEDS_REVIEW:409 };
+        const status: Record<string, number> = { UNAUTHORIZED: 401, FORBIDDEN: 403, NOT_FOUND: 404, INVALID_INPUT: 400, INVALID_PREFERENCES: 400, REQUEST_ID_CONFLICT: 409,MATCH_STARTED:409,NO_POSITION:409,CAPACITY_FULL:409,INVALID_STATE:409,FORMAT_CHANGED:409,ACTIVE_APPLICATION_EXISTS:409,LATE_CHANGE_NEEDS_REVIEW:409,PAYMENT_DEADLINE_EXPIRED:409,INVALID_TEST_PRICING:409 };
         if (status[error.message]) throw new ApiError(error.message, status[error.message]!);
         throw new ApiError('SERVICE_UNAVAILABLE', 503);
       }
