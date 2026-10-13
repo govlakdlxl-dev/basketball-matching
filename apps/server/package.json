@@ -1,0 +1,14 @@
+{
+  "name": "@basket/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8787",
+    "build": "wrangler deploy --dry-run --outdir dist"
+  },
+  "dependencies": {
+    "@basket/core": "workspace:*",
+    "@supabase/supabase-js": "2.117.3"
+  }
+}
