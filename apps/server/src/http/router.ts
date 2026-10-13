@@ -10,6 +10,7 @@ import {createApplicationCommands} from '../features/applications/commands';
 import {createOperations} from '../features/operations/commands';
 import {createPaymentCommands} from '../features/payments/commands';
 import {createPaymentQueries} from '../features/payments/queries';
+import {createPaymentWorker,configuredTestPg} from '../features/payments/worker';
 
 // 기본 호출 제한은 로컬·단일 Worker 검증용. 운영은 공유 제한을 연결해야 합니다.
 const calls=new Map<string,{until:number;count:number}>();
@@ -39,7 +40,7 @@ export async function readBody(request: Request): Promise<Record<string, unknown
   } catch { throw new ApiError('INVALID_INPUT', 400); }
 }
 
-export async function routeRequest(request: Request, env: Env): Promise<Response> {
+export async function routeRequest(request: Request, env: Env,context?:{waitUntil(promise:Promise<unknown>):void}): Promise<Response> {
   const url = new URL(request.url);
   const path = url.pathname;
   if(path==='/api/matches' && request.method==='GET') return Response.json(await createMatchQueries(createDatabase(env)).list(),{headers:{'cache-control':'no-store'}});
@@ -62,7 +63,17 @@ export async function routeRequest(request: Request, env: Env): Promise<Response
     const json = (value: unknown) => Response.json(value ?? null, { headers: { 'cache-control': 'no-store' } });
     if(path==='/api/test-orders'&&request.method==='POST')return json(await createPaymentCommands(database).createTestOrder(actor,await readBody(request)));
     const approval=path.match(/^\/api\/test-orders\/([^/]+)\/approval$/);
-    if(approval&&request.method==='POST')return json(await createPaymentCommands(database).acceptApproval(actor,{...await readBody(request),orderId:approval[1]}));
+    if(approval&&request.method==='POST'){
+      const receipt=await createPaymentCommands(database).acceptApproval(actor,{...await readBody(request),orderId:approval[1]});
+      if(context){const adapter=configuredTestPg(database,env);if(adapter)context.waitUntil(createPaymentWorker(database,adapter).processApproval(receipt.attemptId));}
+      return json(receipt);
+    }
+    const reconcile=path.match(/^\/api\/test-orders\/([^/]+)\/reconcile$/);
+    if(reconcile&&request.method==='POST'){
+      const own=await createPaymentQueries(database).getTestOrder(actor,reconcile[1]);
+      await createPaymentWorker(database,configuredTestPg(database,env)).reconcilePayment(own.id);
+      return json(await createPaymentQueries(database).getTestOrder(actor,own.id));
+    }
     const order=path.match(/^\/api\/test-orders\/([^/]+)$/);
     if(order&&request.method==='GET')return json(await createPaymentQueries(database).getTestOrder(actor,order[1]));
     if (path === '/api/me' && request.method === 'GET') return json(await accounts.getProfile(actor));
@@ -90,8 +101,8 @@ export async function routeRequest(request: Request, env: Env): Promise<Response
       const input={...await readBody(request),applicationId:transition[1]};
       return json(await (transition[2]==='accept'?applications.acceptApplication(actor,input):applications.rejectApplication(actor,input)));
     }
-    const context=path.match(/^\/api\/applications\/([^/]+)\/payment-context$/);
-    if(context && request.method==='GET') return json(await queries.getPaymentContext(actor,context[1]));
+    const paymentContext=path.match(/^\/api\/applications\/([^/]+)\/payment-context$/);
+    if(paymentContext && request.method==='GET') return json(await queries.getPaymentContext(actor,paymentContext[1]));
     if (path === '/api/me/teams' && request.method === 'GET') return json(await accounts.getMyTeams(actor));
     if (path === '/api/me/preferences' && request.method === 'GET') return json(await accounts.getPreferences(actor));
     if (path === '/api/me/preferences' && request.method === 'PUT') return json(await accounts.savePreferences(actor, await readBody(request)));

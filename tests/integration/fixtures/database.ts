@@ -57,6 +57,7 @@ export async function createDatabaseFixture() {
       const ownedMatches=await sql`select id from public.matches where created_by in ${sql(ids)}`;
       if(ownedMatches.length) {
         const matches=ownedMatches.map(row=>row.id as string);
+        await sql`delete from private.fake_pg_payments where order_id in (select id from public.test_orders where match_id in ${sql(matches)})`;
         await sql`delete from public.approval_attempts where order_id in (select id from public.test_orders where match_id in ${sql(matches)})`;
         await sql`delete from public.test_orders where match_id in ${sql(matches)}`;
         await sql`delete from public.activity_records where match_id in ${sql(matches)}`;

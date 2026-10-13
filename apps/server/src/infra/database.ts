@@ -7,6 +7,9 @@ export type Env = {
   ALLOWED_ORIGINS?: string;
   KAKAO_REST_KEY?: string;
   KAKAO_MOBILITY_REST_KEY?: string;
+  TEST_PG_MODE?:string;
+  ALLOW_LOCAL_TEST_PG?:string;
+  TOSS_TEST_SECRET_KEY?:string;
 };
 
 export function createDatabase(env: Env) {
