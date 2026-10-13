@@ -23,7 +23,7 @@ select ok(not public.valid_preferences('{"origin":{"lat":37,"lng":126},"mode":nu
 select ok(not public.valid_preferences('{"origin":{"lng":126},"mode":"subway","maxMinutes":30,"dateFrom":"2026-10-13","dateTo":"2026-10-20","weekdays":[1],"earliestStartMinute":1080,"latestStartMinute":1380,"latestEndMinute":null,"position":null}'), '위도가 없는 좌표는 저장하지 않는다');
 select ok(not public.valid_preferences('{"origin":{"lat":37,"lng":126},"mode":"subway","maxMinutes":30,"dateFrom":null,"dateTo":"2026-10-20","weekdays":[1],"earliestStartMinute":1080,"latestStartMinute":1380,"latestEndMinute":null,"position":null}'), 'NULL 날짜는 저장하지 않는다');
 reset role;
-select is((select count(*)::int from public.profiles), 2, '회원마다 공유 DB 프로필이 생성된다');
+select is((select count(*)::int from public.profiles where id in ('00000000-0000-4000-a000-000000000001','00000000-0000-4000-a000-000000000002')), 2, '검증 회원마다 공유 DB 프로필이 생성된다');
 
 select * from finish();
 rollback;
