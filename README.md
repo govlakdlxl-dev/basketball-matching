@@ -10,6 +10,7 @@
 
 1. Node.js 24와 pnpm을 준비하고 저장소 루트에서 `pnpm install --frozen-lockfile`을 실행합니다.
 2. Docker 실행 후 `pnpm exec supabase start`로 로컬 검증 DB를 준비합니다.
+   이어서 `pnpm local:setup`으로 로컬 공개/서버 키와 `.env.test.json` 검증 설정을 Git 제외 파일에 저장합니다. 값은 출력하지 않습니다.
 3. `apps/web/.env.local`에 Supabase 주소·공개 키·지도 JavaScript 키를, `apps/server/.dev.vars`에 Supabase 주소·서버 키를 설정합니다. 두 파일은 Git에 올리지 않습니다.
 4. 각각 터미널에서 `pnpm --filter @basket/server dev`, `pnpm dev`를 실행합니다. 웹 주소는 `http://127.0.0.1:5173`입니다.
 5. 기존 지도 도메인을 유지하는 로컬 실행에서는 `pnpm map:sync` 후 `04_시안_카카오맵`에서 `python3 -m http.server 8000`을 실행합니다. 이미 이 주소에 지도 서버가 실행 중이면 그대로 사용합니다. 지도 `config.js`는 변경하지 않습니다.

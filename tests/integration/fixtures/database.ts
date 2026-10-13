@@ -8,7 +8,7 @@ import type { Env } from '../../../apps/server/src/infra/database';
 import worker from '../../../apps/server/src/index';
 
 export function loadLocalStatus() {
-  const status = JSON.parse(fs.readFileSync('.superpowers/sdd/2026-10-13-basketball-implementation-plan/local-status.json','utf8')) as Record<string,string>;
+  const status = JSON.parse(fs.readFileSync('.env.test.json','utf8')) as Record<string,string>;
   if (!status.API_URL || !status.DB_URL || !status.ANON_KEY || !status.SERVICE_ROLE_KEY) throw new Error('LOCAL_DB_NOT_CONFIGURED');
   for (const key of ['API_URL','DB_URL'] as const) if (!['127.0.0.1','localhost'].includes(new URL(status[key]!).hostname)) throw new Error('LOCAL_DB_ONLY');
   return status as Record<string,string> & { API_URL:string; DB_URL:string; ANON_KEY:string; SERVICE_ROLE_KEY:string };
@@ -52,6 +52,13 @@ export async function createDatabaseFixture() {
     async reset() {
       await sql.unsafe("create or replace function public.server_now() returns timestamptz language sql volatile set search_path='' as $$select clock_timestamp()$$");
       const ids = names.map(name=>users[name].actor.userId);
+      const ownedMatches=await sql`select id from public.matches where created_by in ${sql(ids)}`;
+      if(ownedMatches.length) {
+        const matches=ownedMatches.map(row=>row.id as string);
+        await sql`delete from public.activity_records where match_id in ${sql(matches)}`;
+        await sql`delete from public.applications where match_id in ${sql(matches)}`;
+        await sql`delete from public.matches where id in ${sql(matches)}`;
+      }
       await sql`delete from public.activity_records where actor_id in ${sql(ids)}`;
       await sql`delete from public.command_receipts where actor_id in ${sql(ids)}`;
       await sql`delete from public.facilities where registered_by in ${sql(ids)}`;

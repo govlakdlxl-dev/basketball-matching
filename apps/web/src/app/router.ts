@@ -2,6 +2,8 @@ import { initializeSession, onSessionChanged } from '../features/auth/session';
 import { preferencesView } from '../features/preferences/view';
 import {searchView} from '../features/search/view';
 import {hostingView} from '../features/facilities/view';
+import {matchDetail} from '../features/matches/detail';
+import {applicationsView} from '../features/applications/view';
 
 export const routes = [
   ['/matches', '경기 찾기', '⌕'], ['/applications', '참여 내역', '✓'],
@@ -21,13 +23,14 @@ export function mountRouter(root: HTMLElement) {
   }
   function render() {
     const path = location.hash.slice(1) || '/matches';
+    const detail=path.match(/^\/matches\/([0-9a-f-]{36})$/i);
     const selected = routes.find(route => route[0] === path) ?? routes[0];
     for (const link of nav.querySelectorAll('a')) {
       if (link.getAttribute('href') === `#${selected[0]}`) link.setAttribute('aria-current', 'page');
       else link.removeAttribute('aria-current');
     }
     main.replaceChildren();
-    const title = document.createElement('h2'); title.className = 'page-title'; title.textContent = selected[1]; main.append(title);
+    const title = document.createElement('h2'); title.className = 'page-title'; title.textContent = detail?'경기 상세':selected[1]; main.append(title);
     // 이전 계정·경로의 비동기 응답은 분리된 컨테이너에 남아 현재 화면에 섞이지 않습니다.
     const panel=document.createElement('div');panel.className='page-view';main.append(panel);
     const card = document.createElement('section'); card.className = 'card empty-state';
@@ -44,7 +47,9 @@ export function mountRouter(root: HTMLElement) {
     if (selected[0] === '/matches') {
       const action = document.createElement('a'); action.className = 'btn'; action.href = '#/preferences'; action.textContent = '내 조건 설정'; card.append(action);
     }
-    if (selected[0] === '/preferences') void preferencesView(panel);
+    if(detail) void matchDetail(panel,detail[1]!);
+    else if (selected[0] === '/preferences') void preferencesView(panel);
+    else if(selected[0]==='/applications') void applicationsView(panel);
     else if(selected[0]==='/matches') void searchView(panel);
     else if(selected[0]==='/hosting') void hostingView(panel);
     else panel.append(card);

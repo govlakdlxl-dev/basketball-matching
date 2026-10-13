@@ -3,6 +3,7 @@ import {authView} from '../auth/view';
 import type {MyTeam} from '../../../../server/src/features/accounts/handlers';
 import type {PlaceCandidate,Point} from '@basket/core/contracts';
 import {mapView} from '../map/view';
+import {hostingPanel} from '../hosting/view';
 
 export async function hostingView(root:HTMLElement) {
  root.append(authView());if(!session()) return;
@@ -16,6 +17,7 @@ export async function hostingView(root:HTMLElement) {
   const form=document.createElement('form');form.className='card';form.innerHTML='<h3>우리 팀 등록 요청</h3><p class="muted">운영자가 팀과 담당자 정보를 확인한 후 모집할 수 있어요.</p><label>팀 이름<input name="name" required maxlength="80"></label><label>담당자 연락 경로<input name="contactRoute" required maxlength="300" placeholder="팀 공식 연락 경로 또는 운영자에게 전달할 방법"></label><label>확인할 팀 정보<textarea name="evidence" required maxlength="2000" placeholder="활동 지역·농구장·기존 모집 자료 등을 알려주세요."></textarea></label><button class="btn">팀 등록 요청</button><p role="status"></p>';
   const requestId=crypto.randomUUID();form.onsubmit=async event=>{event.preventDefault();const button=form.querySelector('button')!;button.disabled=true;const body=Object.fromEntries(new FormData(form));try {await api('/teams','POST',{...body,requestId});await hostingViewRefresh(root);} catch {form.querySelector('[role=status]')!.textContent='팀 등록 요청을 보내지 못했어요. 다시 시도해 주세요.';button.disabled=false;}};root.append(form);
  }
+ try {root.append(await hostingPanel(teams,()=>hostingViewRefresh(root)));} catch {const error=document.createElement('p');error.textContent='모집 정보를 불러오지 못했어요. 다시 접속해 주세요.';root.append(error);}
  if(teams.some(t=>t.status==='approved' && t.active && ['captain','secretary'].includes(t.role))) root.append(facilityForm());
 }
 async function hostingViewRefresh(root:HTMLElement){root.replaceChildren();await hostingView(root);}

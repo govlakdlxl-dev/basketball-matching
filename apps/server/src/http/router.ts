@@ -4,6 +4,9 @@ import type { Env } from '../infra/database';
 import { createAccounts } from '../features/accounts/handlers';
 import { createFacilities } from '../features/facilities/handlers';
 import { searchPlaces } from '../features/facilities/kakao-local';
+import {createMatchCommands} from '../features/matches/commands';
+import {createMatchQueries} from '../features/matches/queries';
+import {createApplicationCommands} from '../features/applications/commands';
 
 // 기본 호출 제한은 로컬·단일 Worker 검증용. 운영은 공유 제한을 연결해야 합니다.
 const calls=new Map<string,{until:number;count:number}>();
@@ -36,6 +39,9 @@ export async function readBody(request: Request): Promise<Record<string, unknown
 export async function routeRequest(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   const path = url.pathname;
+  if(path==='/api/matches' && request.method==='GET') return Response.json(await createMatchQueries(createDatabase(env)).list(),{headers:{'cache-control':'no-store'}});
+  const publicMatch=path.match(/^\/api\/matches\/([^/]+)$/);
+  if(publicMatch && request.method==='GET') return Response.json(await createMatchQueries(createDatabase(env)).get(publicMatch[1]),{headers:{'cache-control':'no-store'}});
   if(path==='/api/facilities' && request.method==='GET') return Response.json(await createFacilities(createDatabase(env),env).list(),{headers:{'cache-control':'no-store'}});
   if(path==='/api/places' && request.method==='GET') {limit(request);return Response.json(await searchPlaces(url.searchParams.get('q') || '',env.KAKAO_REST_KEY),{headers:{'cache-control':'no-store'}});}
   if(path==='/api/routes' && request.method==='POST') {limit(request);return Response.json(await createFacilities(createDatabase(env),env).estimate(await readBody(request)),{headers:{'cache-control':'no-store'}});}
@@ -43,13 +49,27 @@ export async function routeRequest(request: Request, env: Env): Promise<Response
    readBearer(request);const database=createDatabase(env);const actor=await requireActor(request,database);
    return Response.json(await createFacilities(database,env).save(actor,await readBody(request)),{headers:{'cache-control':'no-store'}});
   }
-  if (path.startsWith('/api/me') || path.startsWith('/api/teams') || path.startsWith('/api/operator')) {
+  if (path.startsWith('/api/me') || path.startsWith('/api/teams') || path.startsWith('/api/operator') || path.startsWith('/api/matches') || path.startsWith('/api/applications')) {
     readBearer(request);
     const database = createDatabase(env);
     const actor = await requireActor(request, database);
     const accounts = createAccounts(database);
+    const queries=createMatchQueries(database),matchCommands=createMatchCommands(database),applications=createApplicationCommands(database);
     const json = (value: unknown) => Response.json(value ?? null, { headers: { 'cache-control': 'no-store' } });
     if (path === '/api/me' && request.method === 'GET') return json(await accounts.getProfile(actor));
+    if(path==='/api/me/applications' && request.method==='GET') return json(await queries.myApplications(actor));
+    if(path==='/api/me/hosting' && request.method==='GET') return json(await queries.myHosting(actor));
+    if(path==='/api/matches' && request.method==='POST') return json(await matchCommands.publishMatch(actor,await readBody(request)));
+    const submission=path.match(/^\/api\/matches\/([^/]+)\/applications$/);
+    if(submission && request.method==='POST') return json(await applications.submitApplication(actor,{...await readBody(request),matchId:submission[1]}));
+    if(submission && request.method==='GET') return json(await queries.teamApplications(actor,submission[1]));
+    const transition=path.match(/^\/api\/applications\/([^/]+)\/(accept|reject)$/);
+    if(transition && request.method==='POST') {
+      const input={...await readBody(request),applicationId:transition[1]};
+      return json(await (transition[2]==='accept'?applications.acceptApplication(actor,input):applications.rejectApplication(actor,input)));
+    }
+    const context=path.match(/^\/api\/applications\/([^/]+)\/payment-context$/);
+    if(context && request.method==='GET') return json(await queries.getPaymentContext(actor,context[1]));
     if (path === '/api/me/teams' && request.method === 'GET') return json(await accounts.getMyTeams(actor));
     if (path === '/api/me/preferences' && request.method === 'GET') return json(await accounts.getPreferences(actor));
     if (path === '/api/me/preferences' && request.method === 'PUT') return json(await accounts.savePreferences(actor, await readBody(request)));

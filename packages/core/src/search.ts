@@ -4,7 +4,7 @@ import { parseInstant } from './time';
 export type SearchableMatch = {startsAt:UtcInstant;endsAt:UtcInstant;recruitmentStatus:'open'|'closed'|'cancelled';positionsAvailable:Position[]};
 export type RouteEstimate = {status:'available';durationSeconds:number;queriedAt:UtcInstant;basis:'query_time';mode:'subway'|'car';provider:string} | {status:'unknown';reason:string};
 export function matchesPreferences(match: SearchableMatch,prefs:Preferences,route:RouteEstimate):'matched'|'unmatched'|'unknown' {
- if(match.recruitmentStatus!=='open' || (prefs.position && !match.positionsAvailable.includes(prefs.position))) return 'unmatched';
+ if(match.recruitmentStatus!=='open' || match.positionsAvailable.length===0 || (prefs.position && !match.positionsAvailable.includes(prefs.position))) return 'unmatched';
  let start:Date,end:Date;
  try { start=new Date(parseInstant(match.startsAt));end=new Date(parseInstant(match.endsAt)); } catch {return 'unknown';}
  const parts=(date:Date)=>Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(date).map(p=>[p.type,p.value]));
