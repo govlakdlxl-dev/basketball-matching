@@ -7,6 +7,7 @@ import { searchPlaces } from '../features/facilities/kakao-local';
 import {createMatchCommands} from '../features/matches/commands';
 import {createMatchQueries} from '../features/matches/queries';
 import {createApplicationCommands} from '../features/applications/commands';
+import {createOperations} from '../features/operations/commands';
 
 // 기본 호출 제한은 로컬·단일 Worker 검증용. 운영은 공유 제한을 연결해야 합니다.
 const calls=new Map<string,{until:number;count:number}>();
@@ -49,16 +50,30 @@ export async function routeRequest(request: Request, env: Env): Promise<Response
    readBearer(request);const database=createDatabase(env);const actor=await requireActor(request,database);
    return Response.json(await createFacilities(database,env).save(actor,await readBody(request)),{headers:{'cache-control':'no-store'}});
   }
-  if (path.startsWith('/api/me') || path.startsWith('/api/teams') || path.startsWith('/api/operator') || path.startsWith('/api/matches') || path.startsWith('/api/applications')) {
+  if (path.startsWith('/api/me') || path.startsWith('/api/teams') || path.startsWith('/api/operator') || path.startsWith('/api/matches') || path.startsWith('/api/applications') || path==='/api/issues') {
     readBearer(request);
     const database = createDatabase(env);
     const actor = await requireActor(request, database);
     const accounts = createAccounts(database);
     const queries=createMatchQueries(database),matchCommands=createMatchCommands(database),applications=createApplicationCommands(database);
+    const operations=createOperations(database);
     const json = (value: unknown) => Response.json(value ?? null, { headers: { 'cache-control': 'no-store' } });
     if (path === '/api/me' && request.method === 'GET') return json(await accounts.getProfile(actor));
     if(path==='/api/me/applications' && request.method==='GET') return json(await queries.myApplications(actor));
     if(path==='/api/me/hosting' && request.method==='GET') return json(await queries.myHosting(actor));
+    if(path==='/api/me/format-notices' && request.method==='GET') return json(await operations.myFormatNotices(actor));
+    if(path==='/api/operator/dashboard' && request.method==='GET') return json(await operations.dashboard(actor));
+    if(path==='/api/me/deletion' && request.method==='POST') return json(await operations.requestAccountDeletion(actor));
+    if(path==='/api/issues' && request.method==='POST') return json(await operations.reportIssue(actor,await readBody(request)));
+    const matchOperation=path.match(/^\/api\/matches\/([^/]+)\/(cancel|format-notices|proceeding)$/);
+    if(matchOperation && request.method==='POST') {
+      const input={...await readBody(request),matchId:matchOperation[1]};
+      return json(await (matchOperation[2]==='cancel'?operations.cancelMatch(actor,input):matchOperation[2]==='format-notices'?operations.announceFormatChange(actor,input):operations.reportProceeding(actor,input)));
+    }
+    const appOperation=path.match(/^\/api\/applications\/([^/]+)\/(cancel|format-acknowledgement)$/);
+    if(appOperation && request.method==='POST') {const input={...await readBody(request),applicationId:appOperation[1]};return json(await (appOperation[2]==='cancel'?operations.cancelApplication(actor,input):operations.acknowledgeFormat(actor,input)));}
+    const moderation=path.match(/^\/api\/operator\/matches\/([^/]+)\/moderation$/);
+    if(moderation && request.method==='POST') return json(await operations.moderateMatch(actor,{...await readBody(request),matchId:moderation[1]}));
     if(path==='/api/matches' && request.method==='POST') return json(await matchCommands.publishMatch(actor,await readBody(request)));
     const submission=path.match(/^\/api\/matches\/([^/]+)\/applications$/);
     if(submission && request.method==='POST') return json(await applications.submitApplication(actor,{...await readBody(request),matchId:submission[1]}));

@@ -108,6 +108,10 @@ begin
  end if;
  result:=public.application_json(a);perform public.finish_command(p_actor,'submit_application',p_request_id,result);return result;
 end $$;
+create or replace function public.format_is_acknowledged(p_application uuid,p_match uuid) returns boolean
+language sql security definer set search_path='' as $$select exists(select 1 from public.applications a join public.matches m on m.id=a.match_id where a.id=p_application and m.id=p_match and (a.terms->>'formatVersion')::int=m.format_version)$$;
+revoke all on function public.format_is_acknowledged(uuid,uuid) from public,anon,authenticated;
+grant execute on function public.format_is_acknowledged(uuid,uuid) to service_role;
 create or replace function public.api_accept_application(p_actor uuid,p_application uuid,p_request_id text) returns jsonb
 language plpgsql security definer set search_path='' as $$
 declare m public.matches; a public.applications; match_id uuid; cached jsonb; result jsonb; roster jsonb; v_now timestamptz;
@@ -121,7 +125,7 @@ begin
  v_now:=public.server_now();
  if m.hidden or m.recruitment_status<>'open' or m.starts_at<=v_now then raise exception 'MATCH_STARTED'; end if;
  if a.state<>'pending' then raise exception 'INVALID_STATE'; end if;
- if (a.terms->>'formatVersion')::int<>m.format_version then raise exception 'FORMAT_CHANGED'; end if;
+ if not public.format_is_acknowledged(a.id,m.id) then raise exception 'FORMAT_CHANGED'; end if;
  roster:=public.match_roster(m.id);
  if (roster->>'availableGuests')::int<=0 or (roster->'positionSlots'->a.position->>'available')::int<=0 then raise exception 'CAPACITY_FULL'; end if;
  if (a.terms->'pricing'->>'paymentAmountKrw')::bigint=0 then

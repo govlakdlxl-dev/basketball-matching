@@ -35,10 +35,12 @@ export type MatchRoster = {
   positionSlots: Record<Position, { target: number; confirmed: number; held: number; available: number }>;
 };
 export type MatchInput={teamId:Id;facilityId:Id;startsAt:UtcInstant;endsAt:UtcInstant;playersPerTeam:3|4|5;teamCount:number;existingPlanned:number;guestSlots:Record<Position,number>;baseFeeKrw:Won;policy:PolicySnapshot;meetingPoint:string;rotationDescription:string;guestComposition:string;captainCoordination:string;reservationNote:string;expectedPlayingMinutes:number|null};
-export type MatchSummary=MatchInput & {id:Id;teamName:string;facility:PublicFacility;recruitmentStatus:'open'|'closed'|'cancelled';formatVersion:number;roster:MatchRoster};
+export type MatchSummary=MatchInput & {id:Id;teamName:string;facility:PublicFacility;recruitmentStatus:'open'|'closed'|'cancelled';formatVersion:number;roster:MatchRoster;formatNotices?:Omit<FormatNotice,'actorId'|'affectedApplicationIds'>[];hostReports?:{reportedAt:UtcInstant;reason:string;source:'host_report'}[]};
 export type ApplicationRecord={id:Id;matchId:Id;applicantId:Id;position:Position;state:AppState;submittedAt:UtcInstant;acceptedAt:UtcInstant|null;paymentDeadlineAt:UtcInstant|null;terms:TermsSnapshot};
 export type PaymentContext={application:ApplicationRecord;teamId:Id;recruitmentStatus:MatchSummary['recruitmentStatus']};
-export type MatchNotificationContext={match:{id:Id;startsAt:UtcInstant;recruitmentStatus:MatchSummary['recruitmentStatus']};roster:MatchRoster;applications:ApplicationRecord[];activeCaptainIds:Id[]};
+export type FormatNotice={id:Id;matchId:Id;version:number;previousPlayersPerTeam:3|4|5;currentPlayersPerTeam:3|4|5;actorId:Id;announcedAt:UtcInstant;affectedApplicationIds:Id[];reason:string};
+export type HostReport={id:Id;reportedBy:Id;reportedAt:UtcInstant;reason:string};
+export type MatchNotificationContext={match:{id:Id;startsAt:UtcInstant;recruitmentStatus:MatchSummary['recruitmentStatus']};roster:MatchRoster;applications:ApplicationRecord[];activeCaptainIds:Id[];formatNotices:FormatNotice[];cancellations:CancellationReceipt[];hostReports:HostReport[]};
 export type DomainEvent = {
   id: Id;
   kind: 'application.submitted' | 'application.accepted' | 'application.rejected'

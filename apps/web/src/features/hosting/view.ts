@@ -2,12 +2,13 @@ import type {MatchSummary,ApplicationRecord,PublicFacility} from '@basket/core/c
 import type {MyTeam} from '../../../../server/src/features/accounts/handlers';
 import {api} from '../auth/session';
 import {el,dateLabel,timeLabel,stateNames,positionNames,actionError} from '../ui';
+import {hostOperations} from '../operations/view';
 export async function hostingPanel(teams:MyTeam[],refresh:()=>Promise<void>) {
  const root=el('section','stack');
  const allowed=teams.filter(t=>t.status==='approved' && t.active && ['captain','secretary'].includes(t.role));
  const [facilities,matches]=await Promise.all([api<PublicFacility[]>('/facilities'),api<MatchSummary[]>('/me/hosting')]);
  if(allowed.length) root.append(publishForm(allowed,facilities,refresh));
- for(const match of matches) root.append(hostCard(match));
+ for(const match of matches) root.append(hostCard(match,refresh));
  return root;
 }
 function publishForm(teams:MyTeam[],facilities:PublicFacility[],refresh:()=>Promise<void>) {
@@ -33,7 +34,7 @@ function publishForm(teams:MyTeam[],facilities:PublicFacility[],refresh:()=>Prom
   } catch(error){status.textContent=actionError(error);button.disabled=false;}
  };return form;
 }
-function hostCard(match:MatchSummary) {
+function hostCard(match:MatchSummary,refresh:()=>Promise<void>) {
  const card=el('article','card');card.dataset.testid=`hosting-${match.id}`;card.append(el('h3','',match.facility.name),el('p','muted',`${dateLabel(match.startsAt)} · ${timeLabel(match.startsAt)}–${timeLabel(match.endsAt)}`));
  const roster=el('p','notice'),list=el('div','stack');
  const describe=(m:MatchSummary)=>{roster.textContent=`기존 예정 ${m.roster.existingPlanned}명 · 앱 확정 ${m.roster.confirmedGuests}명 · 결제 대기 ${m.roster.awaitingPayment+m.roster.verifyingPayment}명 · 남은 자리 ${m.roster.availableGuests}명`;};describe(match);
@@ -54,5 +55,5 @@ function hostCard(match:MatchSummary) {
    list.append(row);
   }
  }
- button.onclick=()=>{void load();};return card;
+ button.onclick=()=>{void load();};card.append(hostOperations(match,refresh));return card;
 }

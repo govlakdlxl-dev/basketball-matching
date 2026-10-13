@@ -4,6 +4,7 @@ import {searchView} from '../features/search/view';
 import {hostingView} from '../features/facilities/view';
 import {matchDetail} from '../features/matches/detail';
 import {applicationsView} from '../features/applications/view';
+import {operatorView} from '../features/operations/view';
 
 export const routes = [
   ['/matches', '경기 찾기', '⌕'], ['/applications', '참여 내역', '✓'],
@@ -47,7 +48,8 @@ export function mountRouter(root: HTMLElement) {
     if (selected[0] === '/matches') {
       const action = document.createElement('a'); action.className = 'btn'; action.href = '#/preferences'; action.textContent = '내 조건 설정'; card.append(action);
     }
-    if(detail) void matchDetail(panel,detail[1]!);
+    if(path==='/operator') void operatorView(panel);
+    else if(detail) void matchDetail(panel,detail[1]!);
     else if (selected[0] === '/preferences') void preferencesView(panel);
     else if(selected[0]==='/applications') void applicationsView(panel);
     else if(selected[0]==='/matches') void searchView(panel);

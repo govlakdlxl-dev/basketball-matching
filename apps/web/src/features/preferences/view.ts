@@ -3,6 +3,7 @@ import { validatePreferences } from '@basket/core/preferences';
 import { api, session } from '../auth/session';
 import { authView } from '../auth/view';
 import {mapView} from '../map/view';
+import {deletionView} from '../operations/view';
 
 const DEVICE_KEY = 'basketball-device-preferences-v1';
 export function defaultPreferences(): Preferences {
@@ -69,4 +70,5 @@ export async function preferencesView(root: HTMLElement) {
     finally { submit.disabled = false; }
   };
   root.append(form);
+  if(signedIn) root.append(deletionView());
 }

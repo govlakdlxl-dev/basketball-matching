@@ -1,4 +1,4 @@
-import { auth, isLocalLoginEnabled, session } from './session';
+import { api,auth, isLocalLoginEnabled, session } from './session';
 
 export function authView(): HTMLElement {
   const root = document.createElement('section'); root.className = 'card account';
@@ -8,17 +8,19 @@ export function authView(): HTMLElement {
     const text = document.createElement('p'); text.textContent = '로그인한 계정에 조건을 저장할 수 있어요.';
     const logout = document.createElement('button'); logout.className = 'btn sec'; logout.textContent = '로그아웃';
     logout.onclick = async () => { logout.disabled = true; const result = await auth?.auth.signOut(); if (result?.error) { notice.textContent = '로그아웃을 다시 시도해 주세요.'; logout.disabled = false; } };
-    root.append(text, logout, notice); return root;
+    root.append(text, logout, notice);
+    void api<{isOperator:boolean}>('/me').then(profile=>{if(profile.isOperator){const link=document.createElement('a');link.className='text-link';link.href='#/operator';link.textContent='운영 관리';root.append(link);}}).catch(()=>{});
+    return root;
   }
   const title = document.createElement('h3'); title.textContent = '내 조건을 어디서든 이어서';
-  const kakao = document.createElement('button'); kakao.className = 'btn kakao'; kakao.textContent = '카카오로 로그인'; kakao.disabled = !auth;
+  const kakao = document.createElement('button'); kakao.className = 'btn kakao'; kakao.textContent = '카카오로 로그인'; kakao.disabled = !auth || import.meta.env.VITE_KAKAO_LOGIN_ENABLED!=='true';
   kakao.onclick = async () => {
     kakao.disabled = true;
     const result = await auth?.auth.signInWithOAuth({ provider: 'kakao', options: { redirectTo: `${location.origin}/auth/callback` } });
     if (result?.error) { notice.textContent = '카카오 로그인 연결을 확인하고 다시 시도해 주세요.'; kakao.disabled = false; }
   };
   root.append(title, kakao, notice);
-  if (!auth) notice.textContent = '로그인을 준비하고 있어요. 조건은 이 기기에서 먼저 설정할 수 있어요.';
+  if (kakao.disabled) notice.textContent = '현재 카카오 로그인을 이용할 수 없어요. 조건은 이 기기에서 먼저 설정할 수 있어요.';
   if (isLocalLoginEnabled()) {
     const details = document.createElement('details'); details.open = true; details.className = 'local-test';
     const summary = document.createElement('summary'); summary.textContent = '개발용 테스트 계정';

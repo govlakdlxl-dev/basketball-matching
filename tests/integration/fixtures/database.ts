@@ -52,10 +52,16 @@ export async function createDatabaseFixture() {
     async reset() {
       await sql.unsafe("create or replace function public.server_now() returns timestamptz language sql volatile set search_path='' as $$select clock_timestamp()$$");
       const ids = names.map(name=>users[name].actor.userId);
+      await sql`delete from public.issues where reporter_id in ${sql(ids)}`;
+      await sql`delete from private.account_deletion_requests where user_id in ${sql(ids)}`;
       const ownedMatches=await sql`select id from public.matches where created_by in ${sql(ids)}`;
       if(ownedMatches.length) {
         const matches=ownedMatches.map(row=>row.id as string);
         await sql`delete from public.activity_records where match_id in ${sql(matches)}`;
+        await sql`delete from public.format_acknowledgements where notice_id in (select id from public.format_notices where match_id in ${sql(matches)})`;
+        await sql`delete from public.cancellation_receipts where match_id in ${sql(matches)}`;
+        await sql`delete from public.format_notices where match_id in ${sql(matches)}`;
+        await sql`delete from public.match_host_reports where match_id in ${sql(matches)}`;
         await sql`delete from public.applications where match_id in ${sql(matches)}`;
         await sql`delete from public.matches where id in ${sql(matches)}`;
       }
