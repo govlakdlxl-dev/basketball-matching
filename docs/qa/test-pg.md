@@ -9,3 +9,6 @@
 공식 근거(2026-10-14 확인): [키 종류](https://docs.tosspayments.com/reference/using-api/api-keys), [인증·멱등 헤더](https://docs.tosspayments.com/reference/using-api/authorization), [API·결제 객체](https://docs.tosspayments.com/reference), [오류 코드](https://docs.tosspayments.com/reference/error-codes), [개별 SDK](https://docs.tosspayments.com/sdk/v2/js/payment), [복귀와 10분 승인 조건](https://docs.tosspayments.com/guides/v2/payment-window/integration).
 
 실제 키 준비 후 확인할 항목: 카드 테스트 승인 1회, 본인 주문 조회, 부분 취소→잔액 취소, 응답 유실 후 중복 없이 복구, 실패/중단 복귀, 웹과 설치 앱 복귀. 비밀키·결제키·개인 결제 정보를 QA 기록에 남기지 않습니다.
+
+6. 브라우저에서 ‘테스트 결제하기’→‘로컬 테스트 승인’→서버 승인 확인→개인 50% 환불→팀 취소 잔액 환불을 확인했습니다. 실제 PG 카드 인증 결과와는 구분합니다. 결제 복귀는 256비트 주문 전용 토큰을 해시로 보관하고 최초 유효 승인 접수·멱등 요청에 연결합니다. 로그인 세션이 사라져도 복귀 접수는 가능하며, 회원의 주문 조회에는 로그인이 필요합니다. 초기 발급은 최대 15분·결제 기한까지, 유효 승인 재시도의 복귀 토큰은 발급 후 최대 1시간입니다.
+7. 취소 접수와 환불 의도는 같은 DB 트랜잭션의 trigger로 기록합니다. 의도 저장 실패는 취소·자리 반환을 함께 되돌립니다. 원장과 PG 증거가 맞지 않으면 원장을 일부 변경하지 않고 운영 확인으로 둡니다. 진행 중 환불은 하나이며 신규 전액 목표는 상향만 합니다. 금융 미처리가 남아 있으면 탈퇴를 보류합니다.

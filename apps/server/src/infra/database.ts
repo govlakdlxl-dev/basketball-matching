@@ -10,6 +10,7 @@ export type Env = {
   TEST_PG_MODE?:string;
   ALLOW_LOCAL_TEST_PG?:string;
   TOSS_TEST_SECRET_KEY?:string;
+  TOSS_TEST_CLIENT_KEY?:string;
 };
 
 export function createDatabase(env: Env) {

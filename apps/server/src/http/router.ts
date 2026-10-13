@@ -11,6 +11,9 @@ import {createOperations} from '../features/operations/commands';
 import {createPaymentCommands} from '../features/payments/commands';
 import {createPaymentQueries} from '../features/payments/queries';
 import {createPaymentWorker,configuredTestPg} from '../features/payments/worker';
+import {createRefundQueries} from '../features/refunds/queries';
+import {createRefundWorker} from '../features/refunds/worker';
+import {createCheckout} from '../features/payments/checkout';
 
 // 기본 호출 제한은 로컬·단일 Worker 검증용. 운영은 공유 제한을 연결해야 합니다.
 const calls=new Map<string,{until:number;count:number}>();
@@ -43,6 +46,12 @@ export async function readBody(request: Request): Promise<Record<string, unknown
 export async function routeRequest(request: Request, env: Env,context?:{waitUntil(promise:Promise<unknown>):void}): Promise<Response> {
   const url = new URL(request.url);
   const path = url.pathname;
+  if(request.method==='POST'&&['/api/payments/return','/api/payments/checkout-data','/api/payments/checkout-status'].includes(path)){
+    const database=createDatabase(env),checkout=createCheckout(database,env),input=await readBody(request);
+    const headers={'cache-control':'no-store','referrer-policy':'no-referrer'};
+    if(path.endsWith('/return')){const receipt=await checkout.receive(input);if(context){const adapter=configuredTestPg(database,env);if(adapter)context.waitUntil(createPaymentWorker(database,adapter).processApproval(receipt.attemptId));}return Response.json(receipt,{headers});}
+    return Response.json(path.endsWith('/checkout-data')?await checkout.data(input):await checkout.status(input),{headers});
+  }
   if(path==='/api/matches' && request.method==='GET') return Response.json(await createMatchQueries(createDatabase(env)).list(),{headers:{'cache-control':'no-store'}});
   const publicMatch=path.match(/^\/api\/matches\/([^/]+)$/);
   if(publicMatch && request.method==='GET') return Response.json(await createMatchQueries(createDatabase(env)).get(publicMatch[1]),{headers:{'cache-control':'no-store'}});
@@ -76,20 +85,29 @@ export async function routeRequest(request: Request, env: Env,context?:{waitUnti
     }
     const order=path.match(/^\/api\/test-orders\/([^/]+)$/);
     if(order&&request.method==='GET')return json(await createPaymentQueries(database).getTestOrder(actor,order[1]));
+    const refund=path.match(/^\/api\/test-orders\/([^/]+)\/refund$/);
+    if(refund&&request.method==='GET')return json(await createRefundQueries(database).getRefundRecord(actor,refund[1]));
+    const refundReconcile=path.match(/^\/api\/test-orders\/([^/]+)\/refund\/reconcile$/);
+    if(refundReconcile&&request.method==='POST'){const own=await createPaymentQueries(database).getTestOrder(actor,refundReconcile[1]);return json(await createRefundWorker(database,configuredTestPg(database,env)).processNextRefund(own.id));}
+    const checkout=path.match(/^\/api\/test-orders\/([^/]+)\/checkout$/);
+    if(checkout&&request.method==='POST')return json(await createCheckout(database,env).create(actor,{...await readBody(request),orderId:checkout[1]}));
+    if(path==='/api/me/test-orders'&&request.method==='GET')return json(await database.rpc('api_my_test_orders',{p_actor:actor.userId}));
     if (path === '/api/me' && request.method === 'GET') return json(await accounts.getProfile(actor));
     if(path==='/api/me/applications' && request.method==='GET') return json(await queries.myApplications(actor));
     if(path==='/api/me/hosting' && request.method==='GET') return json(await queries.myHosting(actor));
     if(path==='/api/me/format-notices' && request.method==='GET') return json(await operations.myFormatNotices(actor));
     if(path==='/api/operator/dashboard' && request.method==='GET') return json(await operations.dashboard(actor));
+    if(path==='/api/operator/test-ledger'&&request.method==='GET')return json(await database.rpc('api_operator_test_ledger',{p_actor:actor.userId}));
     if(path==='/api/me/deletion' && request.method==='POST') return json(await operations.requestAccountDeletion(actor));
     if(path==='/api/issues' && request.method==='POST') return json(await operations.reportIssue(actor,await readBody(request)));
     const matchOperation=path.match(/^\/api\/matches\/([^/]+)\/(cancel|format-notices|proceeding)$/);
     if(matchOperation && request.method==='POST') {
       const input={...await readBody(request),matchId:matchOperation[1]};
-      return json(await (matchOperation[2]==='cancel'?operations.cancelMatch(actor,input):matchOperation[2]==='format-notices'?operations.announceFormatChange(actor,input):operations.reportProceeding(actor,input)));
+      const result=await (matchOperation[2]==='cancel'?operations.cancelMatch(actor,input):matchOperation[2]==='format-notices'?operations.announceFormatChange(actor,input):operations.reportProceeding(actor,input));
+      if(matchOperation[2]==='cancel'&&context){const adapter=configuredTestPg(database,env);if(adapter)context.waitUntil(createRefundWorker(database,adapter).runRefundTick());}return json(result);
     }
     const appOperation=path.match(/^\/api\/applications\/([^/]+)\/(cancel|format-acknowledgement)$/);
-    if(appOperation && request.method==='POST') {const input={...await readBody(request),applicationId:appOperation[1]};return json(await (appOperation[2]==='cancel'?operations.cancelApplication(actor,input):operations.acknowledgeFormat(actor,input)));}
+    if(appOperation && request.method==='POST') {const input={...await readBody(request),applicationId:appOperation[1]},result=await (appOperation[2]==='cancel'?operations.cancelApplication(actor,input):operations.acknowledgeFormat(actor,input));if(appOperation[2]==='cancel'&&context){const adapter=configuredTestPg(database,env);if(adapter)context.waitUntil(createRefundWorker(database,adapter).runRefundTick());}return json(result);}
     const moderation=path.match(/^\/api\/operator\/matches\/([^/]+)\/moderation$/);
     if(moderation && request.method==='POST') return json(await operations.moderateMatch(actor,{...await readBody(request),matchId:moderation[1]}));
     if(path==='/api/matches' && request.method==='POST') return json(await matchCommands.publishMatch(actor,await readBody(request)));

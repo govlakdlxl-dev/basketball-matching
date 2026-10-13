@@ -1,14 +1,15 @@
-import type {ApplicationRecord,FormatNotice,MatchSummary} from '@basket/core/contracts';
+import type {ApplicationRecord,FormatNotice,MatchSummary,RefundRecord} from '@basket/core/contracts';
 import {api,auth} from '../auth/session';
-import {el,timeLabel,actionError} from '../ui';
-export type OwnFormatNotice={applicationId:string;notice:Omit<FormatNotice,'actorId'|'affectedApplicationIds'>;acknowledged:boolean};
+import {el,timeLabel,actionError,feeLabel} from '../ui';
+export type OwnFormatNotice={applicationId:string;notice:Omit<FormatNotice,'actorId'|'affectedApplicationIds'>;acknowledged:boolean;declined?:boolean};
 export function formatChoice(application:ApplicationRecord,row:OwnFormatNotice,refresh:()=>Promise<void>) {
  const root=el('section','notice');root.append(el('strong','',`주최자 변경 · ${row.notice.previousPlayersPerTeam}대${row.notice.previousPlayersPerTeam} → ${row.notice.currentPlayersPerTeam}대${row.notice.currentPlayersPerTeam}`),el('p','',`${row.notice.reason} · ${timeLabel(row.notice.announcedAt)} 안내`));
- if(row.acknowledged) root.append(el('p','','변경 내용을 확인하고 계속 참가를 선택했어요.'));
+ if(row.declined)root.append(el('p','','변경으로 불참을 접수했어요. 환불 상태를 확인해 주세요.'));
+ else if(row.acknowledged) root.append(el('p','','변경 내용을 확인하고 계속 참가를 선택했어요.'));
  else root.append(el('p','','원래 신청 조건을 보존했어요. 계속 참가하거나 변경으로 불참을 선택해 주세요.'));
- if(['pending','awaiting_payment','verifying_payment','confirmed'].includes(application.state)) {
+ if(!row.declined&&['pending','awaiting_payment','verifying_payment','confirmed','cancelled'].includes(application.state)) {
   const actions=el('div','stack'),status=el('p','error');status.setAttribute('role','status');
-  if(!row.acknowledged){const accept=el('button','btn sec','변경 후 계속 참가');accept.type='button';const id=crypto.randomUUID();accept.onclick=async()=>{accept.disabled=true;try {await api(`/applications/${application.id}/format-acknowledgement`,'POST',{noticeId:row.notice.id,requestId:id});await refresh();}catch(error){status.textContent=actionError(error);accept.disabled=false;}};actions.append(accept);}
+  if(!row.acknowledged&&application.state!=='cancelled'){const accept=el('button','btn sec','변경 후 계속 참가');accept.type='button';const id=crypto.randomUUID();accept.onclick=async()=>{accept.disabled=true;try {await api(`/applications/${application.id}/format-acknowledgement`,'POST',{noticeId:row.notice.id,requestId:id});await refresh();}catch(error){status.textContent=actionError(error);accept.disabled=false;}};actions.append(accept);}
   const decline=el('button','btn sec','변경으로 불참 · 전액 환불 대상');decline.type='button';const id=crypto.randomUUID();decline.onclick=async()=>{
    decline.disabled=true;
    try {await api(`/applications/${application.id}/cancel`,'POST',{cause:'format_change_declined',formatChangeId:row.notice.id,requestId:id});await refresh();}
@@ -41,6 +42,8 @@ export function deletionView() {
 export async function operatorView(root:HTMLElement) {
  type Dashboard={teams:{id:string;name:string;status:string;contactRoute:string;evidence:string}[];issues:{id:string;text:string;status:string}[];matches:MatchSummary[]};
  let data:Dashboard;try {data=await api('/operator/dashboard');}catch {root.append(el('p','notice','운영자 권한과 연결을 확인해 주세요.'));return;}
+ root.append(el('h3','section-title','테스트 결제 원장'),el('p','muted','실제 출금·팀 지급이 없는 테스트 기록입니다. PG 비용과 부담 방식은 미확인입니다.'));
+ try {const ledger=await api<{orderId:string;paymentStatus:string;paymentAmountKrw:number;platformFeeKrw:number;teamBasisKrw:number;refund:RefundRecord|null}[]>('/operator/test-ledger');for(const order of ledger){const card=el('article','card');card.append(el('span','badge',`테스트 · ${order.paymentStatus}`),el('p','',`결제 기준액 ${feeLabel(order.paymentAmountKrw)} · 플랫폼 수수료 ${feeLabel(order.platformFeeKrw)}`),el('p','',`팀 기준액 ${feeLabel(order.teamBasisKrw)} · PG 비용 미반영`),el('p','muted','PG 비용 미확인 · 실제 지급액 아님'));if(order.refund)card.append(el('p','',`환불 ${order.refund.status} · 누적 완료 ${feeLabel(order.refund.completed.refundedKrw)}`));root.append(card);}}catch{root.append(el('p','notice','테스트 원장을 불러오지 못했어요.'));}
  root.append(el('h3','section-title','팀 등록 검토'));
  for(const team of data.teams){const card=el('article','card');card.append(el('h4','',team.name),el('p','muted',`${team.status} · ${team.contactRoute}`),el('p','',team.evidence));const reason=el('textarea');reason.placeholder='검토 사유';reason.setAttribute('aria-label',`${team.name} 검토 사유`);const actions=el('div','row'),status=el('p','form-status');
   for(const [decision,label] of [['approved','승인'],['needs_info','추가 정보 요청'],['rejected','거절']]) {const button=el('button','btn sec',label),requestId=crypto.randomUUID();button.onclick=async()=>{button.disabled=true;try {await api(`/operator/teams/${team.id}/review`,'POST',{decision,reason:reason.value,requestId});status.textContent='검토를 기록했어요.';}catch(error){status.textContent=actionError(error);button.disabled=false;}};actions.append(button);}card.append(reason,actions,status);root.append(card);

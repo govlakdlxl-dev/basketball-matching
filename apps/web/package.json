@@ -10,6 +10,7 @@
   "dependencies": {
     "@basket/core": "workspace:*",
     "@basket/mobile": "workspace:*",
-    "@supabase/supabase-js": "2.117.3"
+    "@supabase/supabase-js": "2.117.3",
+    "@tosspayments/tosspayments-sdk": "2.9.0"
   }
 }

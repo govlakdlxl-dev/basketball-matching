@@ -3,6 +3,7 @@ import { routeRequest } from './http/router';
 import type { Env } from './infra/database';
 import {createDatabase} from './infra/database';
 import {createPaymentWorker,configuredTestPg} from './features/payments/worker';
+import {createRefundWorker} from './features/refunds/worker';
 
 export default {
   async fetch(request: Request, env: Env = {},context?:{waitUntil(promise:Promise<unknown>):void}) {
@@ -25,5 +26,5 @@ export default {
       return cors(Response.json({ code, message: status === 401 ? '로그인 후 이용해 주세요.' : '요청을 처리하지 못했습니다.' }, { status, headers: { 'cache-control': 'no-store' } }));
     }
   },
-  async scheduled(_controller:unknown,env:Env){const database=createDatabase(env);await database.rpc('api_expire_unpaid');await createPaymentWorker(database,configuredTestPg(database,env)).runPaymentTick();},
+  async scheduled(_controller:unknown,env:Env){const database=createDatabase(env),adapter=configuredTestPg(database,env);await database.rpc('api_expire_unpaid');await createPaymentWorker(database,adapter).runPaymentTick();await createRefundWorker(database,adapter).runRefundTick();},
 };

@@ -6,6 +6,7 @@
     "dev": "pnpm --filter @basket/web dev",
     "map:sync": "pnpm --filter @basket/web build && node scripts/sync-local-map.mjs",
     "local:setup": "node scripts/setup-local.mjs",
+    "check:migrations":"node scripts/check-migrations.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit",

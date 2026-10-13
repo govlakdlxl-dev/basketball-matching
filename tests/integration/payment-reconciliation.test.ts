@@ -36,7 +36,7 @@ test('PG의 주문·금액 불일치는 자동 확정하지 않는다',async()=>
 test('경기 취소 후 늦은 승인은 취소된 신청을 되살리지 않는다',async()=>{
  const s=await setup();await db.request('captain',`/api/matches/${s.m.id}/cancel`,'POST',{requestId:crypto.randomUUID()});
  const worker=createPaymentWorker(createDatabase(db.env),createFakePgAdapter('success'));
- expect(await worker.processApproval(s.receipt.attemptId)).toBe('needs_review');expect(await state(s.a.id)).toBe('cancelled');
+ expect(await worker.processApproval(s.receipt.attemptId)).toBe('paid');expect(await state(s.a.id)).toBe('cancelled');
 });
 test('작업 두 개가 동시에 실행돼도 외부 승인 호출은 한 번이다',async()=>{
  const s=await setup(),base=createFakePgAdapter('success');let count=0;

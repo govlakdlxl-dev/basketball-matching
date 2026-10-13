@@ -5,6 +5,7 @@ import {hostingView} from '../features/facilities/view';
 import {matchDetail} from '../features/matches/detail';
 import {applicationsView} from '../features/applications/view';
 import {operatorView} from '../features/operations/view';
+import {checkoutView,paymentReturnView} from '../features/payments/view';
 
 export const routes = [
   ['/matches', '경기 찾기', '⌕'], ['/applications', '참여 내역', '✓'],
@@ -12,6 +13,7 @@ export const routes = [
 ] as const;
 
 export function mountRouter(root: HTMLElement) {
+  const entryUrl=location.href,entryPath=location.pathname;
   root.innerHTML = `<div class="wrap"><header class="brand"><div><p class="eyebrow">BASKETBALL · GUEST</p><h1>가까운 코트에서<br>함께 뛰어요</h1><p class="sub">서울·인천 실내 농구 게스트 매칭</p></div><span class="ball-mark" aria-hidden="true">◌</span></header><main id="content" tabindex="-1"></main><p class="connection" role="status" id="connection"></p></div><nav class="tabs" aria-label="주 메뉴"><div class="in"></div></nav>`;
   const main = root.querySelector<HTMLElement>('#content')!;
   const nav = root.querySelector<HTMLElement>('.tabs .in')!;
@@ -25,13 +27,14 @@ export function mountRouter(root: HTMLElement) {
   function render() {
     const path = location.hash.slice(1) || '/matches';
     const detail=path.match(/^\/matches\/([0-9a-f-]{36})$/i);
-    const selected = routes.find(route => route[0] === path) ?? routes[0];
+    const inCheckout=entryPath==='/checkout'&&!location.hash,inReturn=entryPath.startsWith('/payment-return/')&&!location.hash;
+    const selected = routes.find(route => route[0] === path) ?? (inCheckout||inReturn?routes[1]:routes[0]);
     for (const link of nav.querySelectorAll('a')) {
       if (link.getAttribute('href') === `#${selected[0]}`) link.setAttribute('aria-current', 'page');
       else link.removeAttribute('aria-current');
     }
     main.replaceChildren();
-    const title = document.createElement('h2'); title.className = 'page-title'; title.textContent = detail?'경기 상세':selected[1]; main.append(title);
+    const title = document.createElement('h2'); title.className = 'page-title'; title.textContent = inCheckout?'테스트 결제':inReturn?'결제 결과':detail?'경기 상세':selected[1]; main.append(title);
     // 이전 계정·경로의 비동기 응답은 분리된 컨테이너에 남아 현재 화면에 섞이지 않습니다.
     const panel=document.createElement('div');panel.className='page-view';main.append(panel);
     const card = document.createElement('section'); card.className = 'card empty-state';
@@ -48,7 +51,9 @@ export function mountRouter(root: HTMLElement) {
     if (selected[0] === '/matches') {
       const action = document.createElement('a'); action.className = 'btn'; action.href = '#/preferences'; action.textContent = '내 조건 설정'; card.append(action);
     }
-    if(path==='/operator') void operatorView(panel);
+    if(inCheckout)void checkoutView(panel,entryUrl);
+    else if(inReturn)void paymentReturnView(panel,entryUrl);
+    else if(path==='/operator') void operatorView(panel);
     else if(detail) void matchDetail(panel,detail[1]!);
     else if (selected[0] === '/preferences') void preferencesView(panel);
     else if(selected[0]==='/applications') void applicationsView(panel);

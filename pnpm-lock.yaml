@@ -84,6 +84,9 @@ importers:
       '@supabase/supabase-js':
         specifier: 2.117.3
         version: 2.117.3
+      '@tosspayments/tosspayments-sdk':
+        specifier: 2.9.0
+        version: 2.9.0
 
   packages/core: {}
 
@@ -750,6 +753,9 @@ packages:
     peerDependenciesMeta:
       '@opentelemetry/api':
         optional: true
+
+  '@tosspayments/tosspayments-sdk@2.9.0':
+    resolution: {integrity: sha512-/gyBo9cQSYwNGFcbJwXbEfIdebPvQwoTeXbzSrT+7u3C8VcaWxfNt9LnT6YiZhwmrTbg3/SuV9i5ji7pJsSw7w==}
 
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
@@ -2075,6 +2081,8 @@ snapshots:
       '@supabase/postgrest-js': 2.117.3
       '@supabase/realtime-js': 2.117.3
       '@supabase/storage-js': 2.117.3
+
+  '@tosspayments/tosspayments-sdk@2.9.0': {}
 
   '@types/chai@5.2.3':
     dependencies:

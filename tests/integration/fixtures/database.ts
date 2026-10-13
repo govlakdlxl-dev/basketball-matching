@@ -22,9 +22,10 @@ export async function createDatabaseFixture() {
   const names = ['memberA','memberB','captain','operator'] as const;
   type Member = typeof names[number];
   const users = {} as Record<Member,{actor:AuthActor;token:string;client:SupabaseClient;email:string;password:string}>;
+  const fixtureId=crypto.randomUUID();let resetPromise:Promise<void>|null=null,resetDone=false;
   for (const name of names) {
     const email = `${crypto.randomUUID()}@example.invalid`, password = crypto.randomUUID()+'!aA1';
-    const {data,error} = await admin.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{nickname:name}});
+    const {data,error} = await admin.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{nickname:name,testFixtureId:fixtureId}});
     if (error || !data.user) throw new Error('LOCAL_USER_SETUP_FAILED');
     const client = createClient(status.API_URL,status.ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
     const signIn = await client.auth.signInWithPassword({email,password});
@@ -50,6 +51,8 @@ export async function createDatabaseFixture() {
       await sql.unsafe(`create or replace function public.server_now() returns timestamptz language sql volatile set search_path='' as $$select '${time.toISOString()}'::timestamptz$$`);
     },
     async reset() {
+      if(resetDone)return;if(resetPromise)return resetPromise;
+      resetPromise=(async()=>{
       await sql.unsafe("create or replace function public.server_now() returns timestamptz language sql volatile set search_path='' as $$select clock_timestamp()$$");
       const ids = names.map(name=>users[name].actor.userId);
       await sql`delete from public.issues where reporter_id in ${sql(ids)}`;
@@ -57,6 +60,11 @@ export async function createDatabaseFixture() {
       const ownedMatches=await sql`select id from public.matches where created_by in ${sql(ids)}`;
       if(ownedMatches.length) {
         const matches=ownedMatches.map(row=>row.id as string);
+        await sql`delete from private.checkout_tickets where order_id in (select id from public.test_orders where match_id in ${sql(matches)})`;
+        await sql`delete from public.test_ledger_entries where order_id in (select id from public.test_orders where match_id in ${sql(matches)})`;
+        await sql`delete from public.refund_attempts where order_id in (select id from public.test_orders where match_id in ${sql(matches)})`;
+        await sql`delete from public.refund_records where order_id in (select id from public.test_orders where match_id in ${sql(matches)})`;
+        await sql`delete from public.refund_intents where application_id in (select id from public.applications where match_id in ${sql(matches)})`;
         await sql`delete from private.fake_pg_payments where order_id in (select id from public.test_orders where match_id in ${sql(matches)})`;
         await sql`delete from public.approval_attempts where order_id in (select id from public.test_orders where match_id in ${sql(matches)})`;
         await sql`delete from public.test_orders where match_id in ${sql(matches)}`;
@@ -77,6 +85,8 @@ export async function createDatabaseFixture() {
       for (const name of names) await admin.auth.admin.deleteUser(users[name].actor.userId);
       await sql`delete from public.profiles where id in ${sql(ids)}`;
       await sql.end();
+      resetDone=true;
+      })();try{await resetPromise;}finally{resetPromise=null;}
     },
   };
 }

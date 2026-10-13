@@ -8,5 +8,5 @@ export function timeLabel(instant:string) {return new Intl.DateTimeFormat('ko-KR
 export function feeLabel(won:number) {return won===0?'무료':`${won.toLocaleString('ko-KR')}원`;}
 export function actionError(error:unknown) {
  const code=error instanceof Error?error.message:'';
- return ({CAPACITY_FULL:'다른 신청자가 먼저 수락됐어요. 남은 자리를 확인해 주세요.',MATCH_STARTED:'경기가 시작됐거나 모집을 마감했어요.',NO_POSITION:'선택한 포지션의 모집 자리가 없어요.',FORMAT_CHANGED:'경기 방식이 변경됐어요. 변경 안내를 먼저 확인해 주세요.',FORBIDDEN:'현재 팀의 담당자 권한을 확인해 주세요.',UNAUTHORIZED:'로그인 후 이용해 주세요.',INVALID_STATE:'신청 상태가 바뀌었어요. 다시 확인해 주세요.'} as Record<string,string>)[code] || '요청을 처리하지 못했어요. 연결과 입력을 확인해 주세요.';
+ return ({CAPACITY_FULL:'다른 신청자가 먼저 수락됐어요. 남은 자리를 확인해 주세요.',MATCH_STARTED:'경기가 시작됐거나 모집을 마감했어요.',NO_POSITION:'선택한 포지션의 모집 자리가 없어요.',FORMAT_CHANGED:'경기 방식이 변경됐어요. 변경 안내를 먼저 확인해 주세요.',FORBIDDEN:'현재 계정의 접근 권한을 확인해 주세요.',UNAUTHORIZED:'로그인 후 이용해 주세요.',INVALID_STATE:'신청 상태가 바뀌었어요. 다시 확인해 주세요.',PAYMENT_DEADLINE_EXPIRED:'결제 기한이 지났어요. 참여 내역에서 상태를 확인해 주세요.',INVALID_PAYMENT_RETURN:'결제 복귀 정보가 맞지 않아요. 참여 내역에서 확인해 주세요.'} as Record<string,string>)[code] || '요청을 처리하지 못했어요. 연결과 입력을 확인해 주세요.';
 }

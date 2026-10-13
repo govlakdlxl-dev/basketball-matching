@@ -30,6 +30,8 @@ export type RefundDelta = {kind:'none'|'refund';target:RefundTotals;additional:R
 export type PaymentStatus='created'|'approval_pending'|'paid'|'failed'|'unknown'|'needs_review';
 export type TestOrder={id:Id;applicationId:Id;teamId:Id;ownerId:Id;environment:'test';terms:TermsSnapshot;pricingVersion:string;paymentDeadlineAt:UtcInstant;status:PaymentStatus};
 export type ApprovalReceipt={attemptId:Id;orderId:Id;receivedAt:UtcInstant;status:PaymentStatus};
+export type RefundStatus='not_required'|'queued'|'processing'|'completed'|'failed'|'unknown'|'needs_review';
+export type RefundRecord={id:Id;orderId:Id;receiptIds:Id[];ratioBps:RefundRatioBps;target:RefundTotals;completed:RefundTotals;status:RefundStatus};
 export type CancellationReceipt = {
   id: Id; applicationId: Id; matchId: Id; receivedAt: UtcInstant;
   cause: CancellationCause; formatChangeId: Id | null; terms: TermsSnapshot;
