@@ -11,6 +11,10 @@ export type Env = {
   ALLOW_LOCAL_TEST_PG?:string;
   TOSS_TEST_SECRET_KEY?:string;
   TOSS_TEST_CLIENT_KEY?:string;
+  FCM_SERVICE_ACCOUNT_JSON?:string;
+  WEB_PUSH_PUBLIC_KEY?:string;
+  WEB_PUSH_PRIVATE_KEY?:string;
+  WEB_PUSH_SUBJECT?:string;
 };
 
 export function createDatabase(env: Env) {
