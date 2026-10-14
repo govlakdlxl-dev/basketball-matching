@@ -28,4 +28,4 @@
 
 ## 3. 검토와 실행 기록
 
-최종 검증 수치와 코드 검토 판정은 검토 종료 뒤 기록한다. [모든 구현 판단과 비용](implementation-decisions.md), [앱 빌드 환경](mobile-build.md), [지도·로그인 설정](kakao-setup.md), [테스트 PG](test-pg.md), [알림](notifications.md)을 함께 확인한다.
+최종 검증은 Vitest 169/169, DB 권한 35/35, 브라우저 시나리오 10/10, 빈 임시 DB 마이그레이션 12개 재실행을 통과했다. 전체 코드 검토의 Important 3건을 재현 후 수정했고 미룬 경미 사항은 없다. 실제 앱 빌드는 Xcode·JDK 부재로 실패했으며 자산 동기화와 Swift 문법 검사만 확인했다. [모든 구현 판단과 비용](implementation-decisions.md), [앱 빌드 환경](mobile-build.md), [지도·로그인 설정](kakao-setup.md), [테스트 PG](test-pg.md), [알림](notifications.md)을 함께 확인한다.
