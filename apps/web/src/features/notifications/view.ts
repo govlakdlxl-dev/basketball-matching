@@ -2,10 +2,13 @@ import type {InboxNotice} from '@basket/core/notifications/contracts';
 import {api,session} from '../auth/session';
 import {authView} from '../auth/view';
 import {el,dateLabel,timeLabel,actionError} from '../ui';
+import {webPushControls} from './web-push';
+import {nativePlatformKind} from '@basket/mobile';
 const titles={'application.accepted':'신청 수락','payment.confirmed':'참가 확정','match.cancelled':'경기 취소','format.changed':'경기 방식 변경','match.proceeding_reported':'주최자 진행 안내','captain.pending':'미처리 신청','captain.shortage':'인원 안내'} as const;
 export async function notificationsView(root:HTMLElement,noticeId?:string){
  if(!session()){root.append(authView(),el('p','muted','로그인하면 본인의 경기 안내를 확인할 수 있어요.'));return;}
  root.append(el('p','muted','앱과 웹의 안내 기록과 읽음 상태를 함께 관리해요. 실제 발송 여부와 읽음은 구분합니다.'));
+ if(!nativePlatformKind())root.append(webPushControls());
  try{
   const rows=noticeId?[await api<InboxNotice>(`/notifications/${noticeId}`)]:await api<InboxNotice[]>('/notifications/inbox');
   if(!rows.length){root.append(el('div','card empty-state','아직 받은 안내가 없어요.'));return;}

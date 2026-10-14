@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@basket/core": "workspace:*",
+    "@block65/webcrypto-web-push": "2.0.0",
     "@supabase/supabase-js": "2.117.3"
   }
 }

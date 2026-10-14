@@ -15,6 +15,7 @@ import {createRefundQueries} from '../features/refunds/queries';
 import {createRefundWorker} from '../features/refunds/worker';
 import {createCheckout} from '../features/payments/checkout';
 import {createNotifications} from '../features/notifications/handlers';
+import {createPushEndpoints} from '../features/notifications/endpoints';
 
 // 기본 호출 제한은 로컬·단일 Worker 검증용. 운영은 공유 제한을 연결해야 합니다.
 const calls=new Map<string,{until:number;count:number}>();
@@ -63,7 +64,7 @@ export async function routeRequest(request: Request, env: Env,context?:{waitUnti
    readBearer(request);const database=createDatabase(env);const actor=await requireActor(request,database);
    return Response.json(await createFacilities(database,env).save(actor,await readBody(request)),{headers:{'cache-control':'no-store'}});
   }
-  if (path.startsWith('/api/me') || path.startsWith('/api/teams') || path.startsWith('/api/operator') || path.startsWith('/api/matches') || path.startsWith('/api/applications') || path.startsWith('/api/test-orders') || path.startsWith('/api/notifications') || path==='/api/issues') {
+  if (path.startsWith('/api/me') || path.startsWith('/api/teams') || path.startsWith('/api/operator') || path.startsWith('/api/matches') || path.startsWith('/api/applications') || path.startsWith('/api/test-orders') || path.startsWith('/api/notifications') || path.startsWith('/api/push-endpoints') || path==='/api/issues') {
     readBearer(request);
     const database = createDatabase(env);
     const actor = await requireActor(request, database);
@@ -71,6 +72,8 @@ export async function routeRequest(request: Request, env: Env,context?:{waitUnti
     const queries=createMatchQueries(database),matchCommands=createMatchCommands(database),applications=createApplicationCommands(database);
     const operations=createOperations(database);
     const json = (value: unknown) => Response.json(value ?? null, { headers: { 'cache-control': 'no-store' } });
+    if(path==='/api/push-endpoints'&&request.method==='POST')return json(await createPushEndpoints(database).registerPushEndpoint(actor,await readBody(request)));
+    const pushEndpoint=path.match(/^\/api\/push-endpoints\/([^/]+)$/);if(pushEndpoint&&request.method==='DELETE')return json(await createPushEndpoints(database).deactivatePushEndpoint(actor,pushEndpoint[1],(await readBody(request)).ownerVersion));
     if(path==='/api/notifications/inbox'&&request.method==='GET')return json(await createNotifications(database).listInbox(actor));
     const notice=path.match(/^\/api\/notifications\/([^/]+)(\/read)?$/);
     if(notice&&notice[2]&&request.method==='POST')return json(await createNotifications(database).markNoticeRead(actor,notice[1]));

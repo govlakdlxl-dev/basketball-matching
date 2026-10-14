@@ -1,4 +1,4 @@
-import { api,auth, isLocalLoginEnabled, session } from './session';
+import { api,auth, isLocalLoginEnabled, session,logout as signOut } from './session';
 
 export function authView(): HTMLElement {
   const root = document.createElement('section'); root.className = 'card account';
@@ -7,7 +7,7 @@ export function authView(): HTMLElement {
   if (user) {
     const text = document.createElement('p'); text.textContent = '로그인한 계정에 조건을 저장할 수 있어요.';
     const logout = document.createElement('button'); logout.className = 'btn sec'; logout.textContent = '로그아웃';
-    logout.onclick = async () => { logout.disabled = true; const result = await auth?.auth.signOut(); if (result?.error) { notice.textContent = '로그아웃을 다시 시도해 주세요.'; logout.disabled = false; } };
+    logout.onclick = async () => { logout.disabled = true; const result = await signOut(); if (result?.error) { notice.textContent = '로그아웃을 다시 시도해 주세요.'; logout.disabled = false; } };
     root.append(text, logout, notice);
     void api<{isOperator:boolean}>('/me').then(profile=>{if(profile.isOperator){const link=document.createElement('a');link.className='text-link';link.href='#/operator';link.textContent='운영 관리';root.append(link);}}).catch(()=>{});
     return root;

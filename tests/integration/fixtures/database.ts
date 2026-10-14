@@ -82,6 +82,7 @@ export async function createDatabaseFixture() {
         await sql`delete from public.matches where id in ${sql(matches)}`;
       }
       await sql`delete from public.activity_records where actor_id in ${sql(ids)}`;
+      await sql`delete from public.push_endpoints where owner_id in ${sql(ids)}`;
       await sql`delete from public.command_receipts where actor_id in ${sql(ids)}`;
       await sql`delete from public.facilities where registered_by in ${sql(ids)}`;
       await sql`delete from private.operator_users where user_id in ${sql(ids)}`;
