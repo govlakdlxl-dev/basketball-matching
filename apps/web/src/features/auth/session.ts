@@ -1,9 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Session } from '@supabase/supabase-js';
+import {platformSessionStorage,expectsNative} from '../../platform/session-storage';
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
-export const auth = url && key ? createClient(url, key, { auth: { flowType: 'pkce', detectSessionInUrl: true } }) : null;
+export const sessionStoragePort=platformSessionStorage();
+export const auth = url && key ? createClient(url, key, { auth: { flowType: 'pkce', detectSessionInUrl: !expectsNative(),storage:sessionStoragePort } }) : null;
 let current: Session | null = null;
 const listeners = new Set<() => void>();
 const leaving = new Set<(previous:Session)=>Promise<void>>();
@@ -24,6 +26,7 @@ export async function initializeSession() {
   current = data.session;
   for (const listener of listeners) listener();
 }
+export async function refreshSession(){if(auth){const {data}=await auth.auth.getSession();current=data.session;for(const listener of listeners)listener();}}
 export async function api<T>(path: string, method = 'GET', input?: unknown): Promise<T> {
   return apiUsingToken<T>(current?.access_token,path,method,input);
 }

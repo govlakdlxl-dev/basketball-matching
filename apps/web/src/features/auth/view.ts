@@ -1,4 +1,6 @@
 import { api,auth, isLocalLoginEnabled, session,logout as signOut } from './session';
+import {beginOAuth} from './callback';
+import {nativePlatformKind} from '@basket/mobile';
 
 export function authView(): HTMLElement {
   const root = document.createElement('section'); root.className = 'card account';
@@ -16,10 +18,10 @@ export function authView(): HTMLElement {
   const kakao = document.createElement('button'); kakao.className = 'btn kakao'; kakao.textContent = '카카오로 로그인'; kakao.disabled = !auth || import.meta.env.VITE_KAKAO_LOGIN_ENABLED!=='true';
   kakao.onclick = async () => {
     kakao.disabled = true;
-    const result = await auth?.auth.signInWithOAuth({ provider: 'kakao', options: { redirectTo: `${location.origin}/auth/callback` } });
-    if (result?.error) { notice.textContent = '카카오 로그인 연결을 확인하고 다시 시도해 주세요.'; kakao.disabled = false; }
+    try{await beginOAuth('kakao');}catch{notice.textContent = '카카오 로그인 연결을 확인하고 다시 시도해 주세요.'; kakao.disabled = false;}
   };
   root.append(title, kakao, notice);
+  if(nativePlatformKind()==='ios'){const apple=document.createElement('button');apple.className='btn sec';apple.textContent='Apple로 로그인';apple.disabled=!auth||import.meta.env.VITE_APPLE_LOGIN_ENABLED!=='true';apple.onclick=async()=>{apple.disabled=true;try{await beginOAuth('apple');}catch{notice.textContent='Apple 로그인 연결을 준비 중이에요.';apple.disabled=false;}};root.append(apple);}
   if (kakao.disabled) notice.textContent = '현재 카카오 로그인을 이용할 수 없어요. 조건은 이 기기에서 먼저 설정할 수 있어요.';
   if (isLocalLoginEnabled()) {
     const details = document.createElement('details'); details.open = true; details.className = 'local-test';

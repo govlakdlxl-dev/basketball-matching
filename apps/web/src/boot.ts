@@ -1,0 +1,1 @@
+void import('./main').catch(()=>{const root=document.querySelector('#app');if(root){const p=document.createElement('p');p.className='notice';p.textContent='앱 연결을 시작하지 못했어요. 앱과 WebView를 업데이트한 뒤 다시 실행해 주세요.';root.replaceChildren(p);}});

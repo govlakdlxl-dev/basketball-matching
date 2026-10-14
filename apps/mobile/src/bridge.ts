@@ -13,6 +13,8 @@ const nativePorts:NativePorts={
  },
 };
 export function nativePlatformKind() {const kind=Capacitor.getPlatform();return kind==='ios' || kind==='android'?kind:null;}
+export async function closeNativeBrowser(){await Browser.close();}
+export async function subscribeToAppState(listener:(active:boolean)=>void){return App.addListener('appStateChange',state=>listener(state.isActive));}
 export function createNativePlatform(ports:NativePorts=nativePorts):PlatformAdapter {
  const kind=ports.getPlatform();if(kind!=='ios' && kind!=='android') throw new Error('NOT_NATIVE_PLATFORM');
  return {kind,openExternal:async url=>{await ports.open(externalUrl(url));},subscribeToLinks:listener=>ports.subscribe(listener)};

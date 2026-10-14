@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "vite build"
+    "build": "vite build",
+    "build:native":"vite build --mode native"
   },
   "dependencies": {
     "@basket/core": "workspace:*",

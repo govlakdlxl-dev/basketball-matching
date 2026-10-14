@@ -3,9 +3,16 @@ import {api} from '../auth/session';
 import {el,feeLabel,timeLabel,actionError} from '../ui';
 import {handlePaymentReturn,pendingPaymentKey} from './return';
 import type {Checkout} from './return';
+import {createPlatform} from '../../platform/runtime';
+import {sessionStoragePort} from '../auth/session';
 export async function beginTestPayment(applicationId:string):Promise<void>{
  const order=await api<TestOrder>('/test-orders','POST',{applicationId,requestId:crypto.randomUUID()});
- const checkout=await api<Checkout>(`/test-orders/${order.id}/checkout`,'POST',{requestId:crypto.randomUUID()});sessionStorage.setItem(pendingPaymentKey,JSON.stringify(checkout));
+ const checkout=await api<Checkout>(`/test-orders/${order.id}/checkout`,'POST',{requestId:crypto.randomUUID()});
+ const platform=createPlatform();if(platform.kind!=='web'){
+  const origin=import.meta.env.VITE_PUBLIC_WEB_ORIGIN as string|undefined;if(!origin)throw new Error('CONFIG_REQUIRED');const base=new URL(origin);if(base.protocol!=='https:'||base.username||base.password)throw new Error('CONFIG_REQUIRED');
+  await sessionStoragePort.setItem('basket.payment.pending',JSON.stringify({orderId:order.id}));const target=new URL('/checkout',base.origin);target.searchParams.set('token',checkout.returnToken);target.searchParams.set('app','1');await platform.openExternal(target.href);return;
+ }
+ sessionStorage.setItem(pendingPaymentKey,JSON.stringify(checkout));
  location.assign('/checkout?token='+encodeURIComponent(checkout.returnToken));
 }
 const refundNames={not_required:'환불 금액 없음',queued:'환불 접수 · 처리 대기',processing:'환불 처리 중',completed:'환불 완료',failed:'환불 실패 · 운영 확인 필요',unknown:'환불 결과 확인 중',needs_review:'환불 운영 확인 필요'} as const;
@@ -30,7 +37,7 @@ export async function checkoutView(root:HTMLElement,url:string){
   const data=await api<Checkout>('/payments/checkout-data','POST',{token});sessionStorage.setItem(pendingPaymentKey,JSON.stringify(data));history.replaceState(null,'','/checkout');
   const card=el('section','card'),status=el('p','form-status'),button=el('button','btn',data.provider==='fake'?'로컬 테스트 승인':'토스 테스트 결제창 열기');
   card.append(el('span','badge',data.provider==='fake'?'실제 출금 없는 로컬 테스트':'토스 테스트 결제'),el('h3','',`총 결제액 ${feeLabel(data.amountKrw)}`),el('p','',`팀 참가비 ${feeLabel(data.amountKrw)}`),el('p','','플랫폼 수수료 0원'),el('p','muted','지금은 테스트 환경입니다. 결제 결과는 서버가 확인하고 참가 상태를 결정합니다.'),button,status);status.setAttribute('role','status');root.append(card);
-  const returnUrl=(kind:'success'|'fail')=>{const r=new URL('/payment-return/'+kind,location.origin);r.searchParams.set('token',token);r.searchParams.set('nonce',data.nonce);return r;};
+  const returnUrl=(kind:'success'|'fail')=>{const r=new URL('/payment-return/'+kind,location.origin);r.searchParams.set('token',token);r.searchParams.set('nonce',data.nonce);if(parsed.searchParams.get('app')==='1'){r.searchParams.set('app','1');r.searchParams.set('appOrderId',data.orderId);}return r;};
   button.onclick=async()=>{button.disabled=true;try{
    if(data.provider==='fake'){const target=returnUrl('success');target.searchParams.set('orderId',data.orderId);target.searchParams.set('paymentKey','fake_'+crypto.randomUUID());target.searchParams.set('amount',String(data.amountKrw));location.assign(target.href);return;}
    if(!data.clientKey?.startsWith('test_ck_'))throw new Error('CONFIG_REQUIRED');const {loadTossPayments,ANONYMOUS}=await import('@tosspayments/tosspayments-sdk');const toss=await loadTossPayments(data.clientKey);
@@ -42,6 +49,7 @@ const returns=new Map<string,Promise<TestOrder|null>>();
 export async function paymentReturnView(root:HTMLElement,url:string){
  const parsed=new URL(url),token=parsed.searchParams.get('token');history.replaceState(null,'','/payment-return');const card=el('section','card'),status=el('p','notice','결제 결과를 확인하고 있어요.'),link=el('a','btn sec','참여 내역 확인');link.href='/#/applications';card.append(el('h3','','테스트 결제 결과'),status,link);root.append(card);
  try{
+  if(parsed.searchParams.get('app')==='1'){const id=parsed.searchParams.get('appOrderId');if(id&&/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(id)){const back=el('a','btn sec','설치 앱으로 돌아가기');back.href='basketpilot://payment/return?orderId='+encodeURIComponent(id);card.append(back);}}
   let pending=returns.get(url);if(!pending){pending=handlePaymentReturn(url);returns.set(url,pending);}await pending;
   if(parsed.pathname.endsWith('/fail')){status.textContent='결제를 완료하지 않았어요. 참여 내역에서 결제 기한을 확인해 주세요.';return;}
   for(let i=0;i<12;i++){const result=await api<{status:string}>('/payments/checkout-status','POST',{token});if(result.status==='paid'){status.textContent='결제 승인이 확인됐어요.';sessionStorage.removeItem(pendingPaymentKey);card.append(el('p','muted','현재 참가·취소 상태는 참여 내역에서 확인해 주세요.'));return;}if(['failed','needs_review'].includes(result.status)){status.textContent=result.status==='failed'?'결제 승인이 실패했어요. 참여 내역을 확인해 주세요.':'결제 내용을 운영자가 확인해야 해요.';return;}await new Promise(r=>setTimeout(r,750));}

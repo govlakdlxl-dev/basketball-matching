@@ -1,7 +1,7 @@
 {
  "name":"@basket/mobile","version":"0.1.0","private":true,"type":"module",
  "exports":{".":"./src/bridge.ts"},
- "scripts":{"sync":"cap sync"},
+ "scripts":{"sync":"pnpm --filter @basket/web build:native && cap sync"},
  "dependencies":{"@basket/core":"workspace:*","@capacitor/core":"8.5.3","@capacitor/app":"8.1.2","@capacitor/browser":"8.0.5","@capacitor/ios":"8.5.3","@capacitor/android":"8.5.3"},
  "devDependencies":{"@capacitor/cli":"8.5.3"}
 }

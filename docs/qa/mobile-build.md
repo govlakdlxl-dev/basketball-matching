@@ -24,7 +24,7 @@ Android의 로컬 앱 origin은 Capacitor 8 기본인 `https://localhost`로 명
 ## 2. 도구 준비 후 실행
 
 1. 전체 Xcode 26 이상, Android Studio 2025.2.1 이상과 SDK API 36·JDK를 준비합니다. 설치·계정·라이선스 절차는 사용자 환경에서 완료해야 합니다. [공식 환경 안내](https://capacitorjs.com/docs/getting-started/environment-setup)
-2. 저장소에서 `pnpm --filter @basket/web build`, `pnpm --filter @basket/mobile exec cap sync`를 실행합니다.
+2. 앱에서 접근 가능한 HTTPS API·지도·웹 주소를 설정하고 `pnpm --filter @basket/mobile sync`를 실행합니다. 이 명령은 native 모드 자산 빌드와 동기화를 함께 수행합니다.
 3. `apps/mobile/android`에서 `./gradlew assembleDebug`를 실행합니다.
 4. `apps/mobile/ios/App`에서 `xcodebuild -project App.xcodeproj -scheme App -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' build`를 실행합니다.
 5. 로그인·지도 핀·키보드·뒤로가기·결제 복귀는 실제 앱에서 검증하고 이 기록을 갱신합니다. 실결제는 아직 활성화하지 않습니다.
