@@ -3,6 +3,12 @@ import {createDevicePushController} from '../../apps/mobile/src/push';
 import {createDatabaseFixture} from './fixtures/database';
 import {createDatabase} from '../../apps/server/src/infra/database';
 import {completeAccountDeletion,runAccountDeletionTick} from '../../apps/server/src/jobs/account-deletion';
+for(const nextUser of ['A','B'])test(`기기 정리 1회 실패 뒤 ${nextUser}의 재등록을 허용하고 늦은 이전 해지는 새 연결을 보존한다`,async()=>{
+ let current={userId:'A',token:'A'},version=0;const saved=new Map<string,string>(),storage={getItem:(k:string)=>saved.get(k)??null,setItem:(k:string,v:string)=>{saved.set(k,v);},removeItem:(k:string)=>{saved.delete(k);}},clear=vi.fn().mockRejectedValueOnce(new Error('DEVICE_CLEANUP_PENDING')).mockResolvedValue(undefined),register=vi.fn(async()=>({endpointId:'same',ownerVersion:++version})),remove=vi.fn(async()=>{}),controller=createDevicePushController({kind:'ios',permission:async()=> 'granted',requestPermission:async()=> 'granted',token:async()=> 'token',clear,click:async()=>{}},{current:()=>current,register,remove},storage);
+ await controller.registerDevicePush();await controller.unregisterDevicePush().catch(()=>{});expect(remove).toHaveBeenCalledTimes(1);current={userId:nextUser,token:nextUser};if(nextUser==='A')await controller.resume();await controller.registerDevicePush();
+ expect(clear).toHaveBeenCalledTimes(2);expect(register).toHaveBeenCalledTimes(2);expect(controller.enabled()).toBe(true);
+ if(nextUser==='B'){await controller.unregisterDevicePush({userId:'A',token:'A'});expect(clear).toHaveBeenCalledTimes(2);expect(controller.enabled()).toBe(true);}
+});
 test('권한 거부는 등록만 중단하고 앱 조회를 막지 않는다',async()=>{
  const native={kind:'ios' as const,permission:async()=> 'denied',requestPermission:vi.fn(async()=> 'denied'),token:vi.fn(async()=> 'token'),clear:async()=>{},click:async()=>{}},api={current:()=>({userId:'A',token:'A'}),register:vi.fn(),remove:vi.fn()},saved=new Map<string,string>(),storage={getItem:(k:string)=>saved.get(k)??null,setItem:(k:string,v:string)=>{saved.set(k,v);},removeItem:(k:string)=>{saved.delete(k);}};
  const controller=createDevicePushController(native,api,storage);expect(await controller.registerDevicePush()).toEqual({status:'permission_denied'});expect(native.token).not.toHaveBeenCalled();expect(api.register).not.toHaveBeenCalled();

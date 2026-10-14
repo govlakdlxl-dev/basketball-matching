@@ -1,6 +1,6 @@
-import type {TestOrder} from '@basket/core/contracts';
+import type {TestOrder,PolicySnapshot} from '@basket/core/contracts';
 import {api,session} from '../auth/session';
-export type Checkout={orderId:string;amountKrw:number;returnToken:string;nonce:string;expiresAt:string;provider:'fake'|'toss_test';clientKey:string|null};
+export type Checkout={orderId:string;amountKrw:number;returnToken:string;nonce:string;expiresAt:string;provider:'fake'|'toss_test';clientKey:string|null;policy:PolicySnapshot;startsAt:string};
 export const pendingPaymentKey='basket.payment.pending';
 export async function handlePaymentReturn(input:string):Promise<TestOrder|null>{
  const url=new URL(input);if(url.origin!==location.origin||!['/payment-return/success','/payment-return/fail'].includes(url.pathname))throw new Error('INVALID_PAYMENT_RETURN');

@@ -6,7 +6,7 @@ let controller:ReturnType<typeof createDevicePushController>|null=null;
 export function setupNativePush(){if(!nativePlatformKind())return;
  controller=createDevicePushController(nativePushPorts(),{current,register:(actor,input)=>apiUsingToken(actor.token,'/push-endpoints','POST',input),remove:async(binding,token)=>{await apiUsingToken(token,`/push-endpoints/${binding.endpointId}`,'DELETE',{ownerVersion:binding.ownerVersion});}},localStorage);
  void controller.listen(path=>{location.hash=path;});
- onSessionLeaving(async s=>{await controller?.unregisterDevicePush({userId:s.user.id,token:s.access_token});await sessionStoragePort.removeItem('basket.auth.transaction');await sessionStoragePort.removeItem('basket.payment.pending');});
+ onSessionLeaving(async s=>{await controller?.unregisterDevicePush({userId:s.user.id,token:s.access_token});if(!session()||session()?.user.id===s.user.id){await sessionStoragePort.removeItem('basket.auth.transaction');await sessionStoragePort.removeItem('basket.payment.pending');}});
  onSessionChanged(()=>{void controller?.resume();});
 }
 export async function refreshNativePush(){if(!controller)return;await controller.resume();if(controller.enabled())await controller.registerDevicePush(false);}

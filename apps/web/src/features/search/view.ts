@@ -35,17 +35,15 @@ export async function searchView(root:HTMLElement) {
  }
  root.append(matchSection);
  if(unknown.length) {const section=element('section','stack');section.append(element('h3','section-title','이동 시간 확인이 필요한 경기'),element('p','muted',hasOrigin?'일정·포지션은 맞지만 경로를 확인하지 못했어요. 길찾기를 확인한 뒤 신청해 주세요.':'출발지를 저장하면 이동 시간을 확인할 수 있어요.'));for(const row of unknown) section.append(matchCard(row.match,row.route));root.append(section);}
- const facilitySection=element('section','stack');facilitySection.append(element('h3','section-title','실제 실내 농구장'),element('p','muted','시설 등록은 경기 모집·대관 확정을 뜻하지 않아요.'));
+ const facilitySection=element('section','stack');facilitySection.append(element('h3','section-title','등록된 농구 시설'),element('p','muted','시설 등록은 경기 모집·대관 확정을 뜻하지 않아요.'));
  for(const [i,f] of facilities.entries()) {
   const card=element('article','card facility-card');card.dataset.id=f.id;
   const meta=element('div','row');meta.append(element('span','facility-number',String(i+1)),element('span','badge',f.region==='seoul'?'서울 · 시설':'인천 · 시설'));
-  // 실내 여부를 확인한 공식 시설만 '실내' 표시합니다.
-  if(f.registration==='operator' && f.basketballUseStatus==='verified') (meta.lastElementChild as HTMLElement).textContent=`${f.region==='seoul'?'서울':'인천'} · 실내`;
   const checked=f.locationStatus==='verified' && f.basketballUseStatus==='verified';meta.append(element('span',checked?'badge ok':'badge caution',checked?'출처 확인':'주최자 등록 · 미확인'));
   card.append(meta,element('h4','',f.name),element('p','muted',f.address));
   const footer=element('div','row');
   const directions=element('a','text-link','카카오맵 길찾기 ↗');directions.href=`https://map.kakao.com/link/to/${encodeURIComponent(f.name)},${f.point.lat},${f.point.lng}`;directions.target='_blank';directions.rel='noopener noreferrer';footer.append(directions);
-  if(f.sourceUrl) {try {const url=new URL(f.sourceUrl);if(url.protocol==='https:'){const source=element('a','text-link','공식 안내 ↗');source.href=url.href;source.target='_blank';source.rel='noopener noreferrer';footer.append(source);}} catch { /* 링크 형식이 잘못되면 문자 정보만 표시합니다. */ }}
+  if(f.sourceUrl) {try {const url=new URL(f.sourceUrl);if(url.protocol==='https:'){const source=element('a','text-link',f.registration==='operator'&&checked?'시설 안내 자료 ↗':'등록자가 제공한 자료 ↗');source.href=url.href;source.target='_blank';source.rel='noopener noreferrer';footer.append(source);}} catch { /* 링크 형식이 잘못되면 문자 정보만 표시합니다. */ }}
   card.append(footer);list.append(card);
  }
  facilitySection.append(list);root.append(facilitySection);

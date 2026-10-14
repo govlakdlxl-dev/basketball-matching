@@ -5,6 +5,7 @@ import {handlePaymentReturn,pendingPaymentKey} from './return';
 import type {Checkout} from './return';
 import {createPlatform} from '../../platform/runtime';
 import {sessionStoragePort} from '../auth/session';
+import {refundPolicyView} from './policy-view';
 export async function beginTestPayment(applicationId:string):Promise<void>{
  const order=await api<TestOrder>('/test-orders','POST',{applicationId,requestId:crypto.randomUUID()});
  const checkout=await api<Checkout>(`/test-orders/${order.id}/checkout`,'POST',{requestId:crypto.randomUUID()});
@@ -17,7 +18,7 @@ export async function beginTestPayment(applicationId:string):Promise<void>{
 }
 const refundNames={not_required:'환불 금액 없음',queued:'환불 접수 · 처리 대기',processing:'환불 처리 중',completed:'환불 완료',failed:'환불 실패 · 운영 확인 필요',unknown:'환불 결과 확인 중',needs_review:'환불 운영 확인 필요'} as const;
 export async function paymentPanel(application:ApplicationRecord,order?:TestOrder){
- const box=el('div','payment-panel');box.append(el('p','muted','테스트 결제 · 실제 출금 없음'),el('p','',`팀 참가비 ${feeLabel(application.terms.pricing.baseFeeKrw)} · 플랫폼 수수료 0원`));
+ const box=el('div','payment-panel');box.append(el('p','muted','테스트 결제 · 실제 출금 없음'),el('p','',`팀 참가비 ${feeLabel(application.terms.pricing.baseFeeKrw)} · 플랫폼 수수료 0원`),refundPolicyView(application.terms));
  if(application.state==='awaiting_payment'){
   box.append(el('p','notice',`${timeLabel(application.paymentDeadlineAt!)}까지 결제해 주세요.`));const pay=el('button','btn','테스트 결제하기'),status=el('p','form-status');status.setAttribute('role','status');pay.onclick=async()=>{pay.disabled=true;try{await beginTestPayment(application.id);}catch(e){status.textContent=e instanceof Error&&e.message==='CONFIG_REQUIRED'?'테스트 결제 업체 설정을 준비 중이에요.':actionError(e);pay.disabled=false;}};box.append(pay,status);
  }
@@ -36,7 +37,7 @@ export async function checkoutView(root:HTMLElement,url:string){
  try{
   const data=await api<Checkout>('/payments/checkout-data','POST',{token});sessionStorage.setItem(pendingPaymentKey,JSON.stringify(data));history.replaceState(null,'','/checkout');
   const card=el('section','card'),status=el('p','form-status'),button=el('button','btn',data.provider==='fake'?'로컬 테스트 승인':'토스 테스트 결제창 열기');
-  card.append(el('span','badge',data.provider==='fake'?'실제 출금 없는 로컬 테스트':'토스 테스트 결제'),el('h3','',`총 결제액 ${feeLabel(data.amountKrw)}`),el('p','',`팀 참가비 ${feeLabel(data.amountKrw)}`),el('p','','플랫폼 수수료 0원'),el('p','muted','지금은 테스트 환경입니다. 결제 결과는 서버가 확인하고 참가 상태를 결정합니다.'),button,status);status.setAttribute('role','status');root.append(card);
+  card.append(el('span','badge',data.provider==='fake'?'실제 출금 없는 로컬 테스트':'토스 테스트 결제'),el('h3','',`총 결제액 ${feeLabel(data.amountKrw)}`),el('p','',`팀 참가비 ${feeLabel(data.amountKrw)}`),el('p','','플랫폼 수수료 0원'),refundPolicyView(data),el('p','muted','지금은 테스트 환경입니다. 결제 결과는 서버가 확인하고 참가 상태를 결정합니다.'),button,status);status.setAttribute('role','status');root.append(card);
   const returnUrl=(kind:'success'|'fail')=>{const r=new URL('/payment-return/'+kind,location.origin);r.searchParams.set('token',token);r.searchParams.set('nonce',data.nonce);if(parsed.searchParams.get('app')==='1'){r.searchParams.set('app','1');r.searchParams.set('appOrderId',data.orderId);}return r;};
   button.onclick=async()=>{button.disabled=true;try{
    if(data.provider==='fake'){const target=returnUrl('success');target.searchParams.set('orderId',data.orderId);target.searchParams.set('paymentKey','fake_'+crypto.randomUUID());target.searchParams.set('amount',String(data.amountKrw));location.assign(target.href);return;}
