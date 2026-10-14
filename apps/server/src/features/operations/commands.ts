@@ -3,6 +3,7 @@ import type {Database} from '../../infra/database';
 import {ApiError} from '../../http/auth';
 import {textField} from '../accounts/handlers';
 import {idField} from '../matches/commands';
+import {completeAccountDeletion} from '../../jobs/account-deletion';
 export function createOperations(database:Database) {return {
  cancelApplication(actor:AuthActor,input:Record<string,unknown>):Promise<CancellationReceipt> {
   if(!['personal','format_change_declined'].includes(String(input.cause))) throw new ApiError('INVALID_INPUT',400);
@@ -26,10 +27,7 @@ export function createOperations(database:Database) {return {
   const result=await database.rpc<{status:'needs_resolution'|'ready';authId?:string}>('api_prepare_account_deletion',{p_actor:actor.userId});
   if(result.status==='needs_resolution') return {status:'needs_resolution'};
   if(!result.authId) throw new ApiError('SERVICE_UNAVAILABLE',503);
-  const {error}=await database.client.auth.admin.deleteUser(result.authId);
-  let success=!error;
-  if(error) {const profile=await database.client.from('profiles').select('auth_id').eq('id',actor.userId).maybeSingle();success=!profile.error && Boolean(profile.data) && profile.data!.auth_id===null;}
-  await database.rpc('api_finish_account_deletion',{p_actor:actor.userId,p_success:success});
+  const success=await completeAccountDeletion(database,actor.userId,result.authId);
   return {status:success?'completed':'needs_resolution'};
  },
 };}

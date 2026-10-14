@@ -20,6 +20,8 @@ export function createPushLifecycle(storage:StoragePort,remove:(binding:PushBind
  return {
   binding:()=>read<PushBinding|null>('.binding',null),
   bind:(b:PushBinding)=>storage.setItem(prefix+'.binding',JSON.stringify(b)),
+  release,
+  pendingCount:(userId:string)=>pending().filter(p=>p.userId===userId).length,
   async leave(actor:PushActor){const b=read<PushBinding|null>('.binding',null);if(b?.userId!==actor.userId)return;storage.removeItem(prefix+'.binding');try{await clear();}finally{await release(b,actor.token);}},
   async retry(actor:PushActor){for(const b of pending().filter(p=>p.userId===actor.userId))await release(b,actor.token);},
  };

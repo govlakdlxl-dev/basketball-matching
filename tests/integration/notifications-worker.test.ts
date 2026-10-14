@@ -9,7 +9,7 @@ let db:Awaited<ReturnType<typeof createDatabaseFixture>>;
 beforeAll(async()=>{db=await createDatabaseFixture();await db.sql`update public.teams set status='approved' where id=${db.teamId}`;});afterAll(async()=>{await db?.reset();});
 test('결제 설정 단계의 오류가 정기 알림 단계를 막지 않는다',async()=>{
  await worker.scheduled({}, {...db.env,TEST_PG_MODE:'unsupported',TOSS_TEST_SECRET_KEY:'test_invalid'});
- const rows=await db.sql`select stage,status from private.scheduled_job_runs order by started_at desc limit 4`;
+ const rows=await db.sql`select stage,status from private.scheduled_job_runs order by started_at desc limit 5`;
  expect(rows).toEqual(expect.arrayContaining([{stage:'payment',status:'failed'},{stage:'refund',status:'failed'},{stage:'notifications',status:'completed'}]));
 });
 test('동시 정기 작업은 최초 안내를 중복 발송하지 않고 미설정 알림톡을 구분한다',async()=>{

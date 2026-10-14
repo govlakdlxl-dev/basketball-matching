@@ -30,5 +30,5 @@ export function setupWebPush(){
 }
 export function webPushControls(){const root=document.createElement('div');root.className='card stack';const status=document.createElement('p');status.className='muted';const enable=document.createElement('button');enable.className='btn sec';enable.textContent='웹 푸시 알림 켜기';const disable=document.createElement('button');disable.className='btn sec';disable.textContent='웹 푸시 알림 끄기';
  enable.onclick=async()=>{enable.disabled=true;try{await registerWebPush();status.textContent='이 브라우저에 알림을 연결했어요.';}catch(e){status.textContent=e instanceof Error&&e.message==='PERMISSION_DENIED'?'브라우저 설정에서 알림을 허용할 수 있어요.':'웹 푸시 연결 설정을 준비 중이에요. 알림함은 이용할 수 있어요.';}enable.disabled=false;};
- disable.onclick=async()=>{await disableWebPush();status.textContent='이 브라우저의 알림 연결을 해제했어요.';};root.append(enable,disable,status);return root;
+ disable.onclick=async()=>{try{await disableWebPush();status.textContent='이 브라우저의 알림 연결을 해제했어요.';}catch{status.textContent='알림 정리를 마치지 못했어요. 브라우저 설정도 확인해 주세요.';}};root.append(enable,disable,status);return root;
 }

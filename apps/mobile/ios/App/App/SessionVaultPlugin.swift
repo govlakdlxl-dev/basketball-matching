@@ -1,5 +1,7 @@
 import Capacitor
 import Security
+import UIKit
+import UserNotifications
 
 @objc(SessionVaultPlugin)
 public final class SessionVaultPlugin: CAPPlugin, CAPBridgedPlugin {
@@ -8,7 +10,8 @@ public final class SessionVaultPlugin: CAPPlugin, CAPBridgedPlugin {
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "getItem", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setItem", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "removeItem", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "removeItem", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "clearBadge", returnType: CAPPluginReturnPromise)
     ]
     private func query(_ call: CAPPluginCall) -> [String: Any]? {
         guard let key = call.getString("key"), key.count <= 256,
@@ -38,5 +41,12 @@ public final class SessionVaultPlugin: CAPPlugin, CAPBridgedPlugin {
     @objc public func removeItem(_ call: CAPPluginCall) {
         guard let q = query(call) else { return }; let status = SecItemDelete(q as CFDictionary)
         if status == errSecSuccess || status == errSecItemNotFound { call.resolve() } else { call.reject("보관소를 사용할 수 없습니다.", "VAULT_UNAVAILABLE") }
+    }
+    @objc public func clearBadge(_ call: CAPPluginCall) {
+        if #available(iOS 16.0, *) {
+            UNUserNotificationCenter.current().setBadgeCount(0) { error in
+                if error == nil { call.resolve() } else { call.reject("배지를 정리하지 못했습니다.", "BADGE_UNAVAILABLE") }
+            }
+        } else { DispatchQueue.main.async { UIApplication.shared.applicationIconBadgeNumber = 0; call.resolve() } }
     }
 }
