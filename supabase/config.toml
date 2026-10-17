@@ -56,9 +56,9 @@ enable_signup = true
 enable_confirmations = false
 double_confirm_changes = true
 
-# 카카오 키를 설정하고 enabled를 바꾼 뒤 실제 제공자 검증을 합니다.
+# 루트 .env의 비공개 키를 읽습니다. 실제 키 값은 저장소에 포함하지 않습니다.
 [auth.external.kakao]
-enabled = false
-client_id = ""
-secret = ""
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_KAKAO_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_KAKAO_SECRET)"
 email_optional = true
