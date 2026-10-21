@@ -9,13 +9,16 @@
 ## 2. 실행
 
 1. Node.js 24와 pnpm을 준비하고 저장소 루트에서 `pnpm install --frozen-lockfile`을 실행합니다.
-2. Docker 실행 후 `pnpm exec supabase start`로 로컬 검증 DB를 준비합니다.
+2. `.env.example`을 참고해 루트 `.env`에 카카오 로그인용 REST API 키와 Client Secret을 입력합니다. 현재 로컬 인증 설정은 이 파일을 참조하므로 Supabase 실행 전에 준비해야 합니다. [카카오 설정 안내](docs/qa/kakao-setup.md)를 따릅니다.
+   Docker 실행 후 `pnpm exec supabase start`로 로컬 검증 DB를 준비합니다.
    이어서 `pnpm local:setup`으로 로컬 공개/서버 키와 `.env.test.json` 검증 설정을 Git 제외 파일에 저장합니다. 값은 출력하지 않습니다.
 3. `apps/web/.env.local`에 Supabase 주소·공개 키·지도 JavaScript 키를, `apps/server/.dev.vars`에 Supabase 주소·서버 키를 설정합니다. 두 파일은 Git에 올리지 않습니다.
 4. 각각 터미널에서 `pnpm --filter @basket/server dev`, `pnpm dev`를 실행합니다. 웹 주소는 `http://127.0.0.1:5173`입니다.
 5. 기존 지도 도메인을 유지하는 로컬 실행에서는 `pnpm map:sync` 후 `04_시안_카카오맵`에서 `python3 -m http.server 8000`을 실행합니다. 이미 이 주소에 지도 서버가 실행 중이면 그대로 사용합니다. 지도 `config.js`는 변경하지 않습니다.
 
 카카오맵 키와 카카오 로그인 설정은 다릅니다. 로그인은 Supabase 제공자와 카카오 REST 키·리디렉션 설정이 필요합니다. 개발용 테스트 로그인은 운영 빌드에 제공하지 않습니다.
+
+화면만 확인하려면 [단일 HTML 시안](artifacts/농구매칭_단일시안.html)을 내려받아 열 수 있습니다. 이 파일은 실제 로그인·신청·결제를 실행하지 않는 독립 시안입니다.
 
 ## 3. 구성
 
@@ -26,6 +29,7 @@
 | `packages/core` | 조건·시각·가격 등 공통 규칙 |
 | `supabase` | 로컬 DB 설정·권한·마이그레이션 |
 | `tests` | 공유 DB·두 계정·웹 흐름 검증 |
+| `artifacts` | 내려받아 확인하는 단일 HTML 시안 |
 | `docs/superpowers/specs` | 이번 인터뷰를 반영한 승인 설계 |
 | `docs/superpowers/plans` | 승인 구현 계획 |
 | `04_시안_카카오맵` | 기존 시안·지도 설정 보존 |
@@ -38,4 +42,4 @@
 
 `pnpm check:migrations`는 기존 자료를 초기화하지 않고 별도 임시 DB에서 전체 마이그레이션과 모집·승인·취소·환불 흐름을 검사한 뒤 해당 임시 DB만 삭제합니다. 로컬 테스트 결제는 서버 비공개 설정의 `TEST_PG_MODE=fake`, `ALLOW_LOCAL_TEST_PG=true`로 켜며 localhost DB에서만 허용합니다. 업체 테스트 키는 [테스트 PG 안내](docs/qa/test-pg.md)를 따릅니다.
 
-실제 카카오 OAuth, 실결제·환불, 외부 알림 발송, 앱스토어 출시는 제공자 설정과 계약·환경 검증이 필요합니다. 검증 결과와 연결 준비 상태를 구분해 기록합니다. 초기 플랫폼 수수료는 0%이며 향후 5~10% 수수료는 참가자·팀이 절반씩 부담하는 별도 계산입니다. PG 비용은 견적 후 결정합니다.
+Chrome 웹에서는 실제 카카오 로그인·조건 저장·재로그인 복원을 확인했습니다. 다른 실행 환경은 자체 카카오 설정이 필요하며, 설치 앱의 실제 로그인·실결제·환불·외부 알림·앱스토어 출시는 별도 제공자 설정과 계약·환경 검증이 남아 있습니다. [현재 구현 상태](docs/qa/current-status.md)에서 범위를 확인할 수 있습니다. 초기 플랫폼 수수료는 0%이며 향후 5~10% 수수료는 참가자·팀이 절반씩 부담하는 별도 계산입니다. PG 비용은 견적 후 결정합니다.
