@@ -33,5 +33,29 @@ test('등록 응답·선택 조회는 token·구독 비밀을 노출하지 않�
  const a=await register('memberA',native());expect(Object.keys(a).sort()).toEqual(['endpointId','ownerVersion']);const selected=await createPushEndpoints(createDatabase(db.env)).selectPushEndpoint(db.memberA.userId);expect(JSON.stringify(selected)).not.toContain('token');expect(JSON.stringify(selected)).not.toContain('registration');
 });
 test('claim 뒤 기기 소유자 변경은 옛 버전의 전송을 억제한다',async()=>{
- const s=await acceptedPayment(db,10000,false),registration=native(),endpoint=await register('memberA',registration),database=createDatabase(db.env),repo=createNotificationRepository(database),snapshot=await createNotificationSnapshots(database).loadNotificationSnapshot(s.m.id),plan=planNotifications(null,snapshot,'2026-10-20T10:05:00Z');await db.setLocalDatabaseTime('2026-10-20T10:05:00Z');await repo.persistNotificationPlan(null,plan);const claims=await repo.claimNotificationJobs(crypto.randomUUID(),'2026-10-20T10:05:00Z');expect(claims[0]?.endpointId).toBe(endpoint.endpointId);await register('memberB',registration);let sends=0;const fake:DeliveryPort={send:async()=>{sends++;return {status:'provider_accepted',providerMessageId:'fake',reason:null};}};expect((await createNotificationDispatcher(database).dispatchNotificationJob(claims[0]!,fake)).status).toBe('suppressed');expect(sends).toBe(0);
+ // acceptedPayment의 고정 시각보다 이후에 등록된 다른 테스트의 기기가
+ // 선택되지 않도록 이 시나리오의 계정과 토큰을 독립적으로 만듭니다.
+ const isolated=await createDatabaseFixture();
+ try{
+  await isolated.sql`update public.teams set status='approved' where id=${isolated.teamId}`;
+  const s=await acceptedPayment(isolated,10000,false);
+  const registration={...native(),registration:{token:crypto.randomUUID().replaceAll('-','').repeat(2)}};
+  const registerDevice=async(member:'memberA'|'memberB')=>{
+   const response=await isolated.request(member,'/api/push-endpoints','POST',registration);
+   expect(response.status).toBe(200);
+   return await response.json() as {endpointId:string;ownerVersion:number};
+  };
+  const endpoint=await registerDevice('memberA'),database=createDatabase(isolated.env),repo=createNotificationRepository(database);
+  const snapshot=await createNotificationSnapshots(database).loadNotificationSnapshot(s.m.id),plan=planNotifications(null,snapshot,'2026-10-20T10:05:00Z');
+  await isolated.setLocalDatabaseTime('2026-10-20T10:05:00Z');
+  await repo.persistNotificationPlan(null,plan);
+  const claims=await repo.claimNotificationJobs(crypto.randomUUID(),'2026-10-20T10:05:00Z');
+  expect(claims[0]?.endpointId).toBe(endpoint.endpointId);
+  expect(claims[0]?.endpointOwnerVersion).toBe(endpoint.ownerVersion);
+  await registerDevice('memberB');
+  let sends=0;
+  const fake:DeliveryPort={send:async()=>{sends++;return {status:'provider_accepted',providerMessageId:'fake',reason:null};}};
+  expect((await createNotificationDispatcher(database).dispatchNotificationJob(claims[0]!,fake)).status).toBe('suppressed');
+  expect(sends).toBe(0);
+ }finally{await isolated.reset();}
 });
