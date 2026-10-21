@@ -1,0 +1,28 @@
+{
+  "name": "basketball-matching",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter @basket/web dev",
+    "map:sync": "pnpm --filter @basket/web build && node scripts/sync-local-map.mjs",
+    "local:setup": "node scripts/setup-local.mjs",
+    "check:migrations":"node scripts/check-migrations.mjs",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit",
+    "build": "pnpm --filter @basket/web build && pnpm --filter @basket/server build",
+    "check": "pnpm test && pnpm typecheck && pnpm build"
+  },
+  "devDependencies": {
+    "@basket/core": "workspace:*",
+    "@playwright/test": "1.64.0",
+    "@supabase/supabase-js": "2.117.3",
+    "@types/node": "26.6.5",
+    "postgres": "3.4.9",
+    "supabase": "2.120.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.4",
+    "vitest": "5.0.4",
+    "wrangler": "4.150.0"
+  }
+}

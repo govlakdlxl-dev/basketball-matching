@@ -1,0 +1,17 @@
+{
+  "name": "@basket/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "build:native":"vite build --mode native"
+  },
+  "dependencies": {
+    "@basket/core": "workspace:*",
+    "@basket/mobile": "workspace:*",
+    "@supabase/supabase-js": "2.117.3",
+    "@tosspayments/tosspayments-sdk": "2.9.0"
+  }
+}

@@ -1,0 +1,11 @@
+:root {
+  --bg:#EEF1F7; --ink:#0B1B3A; --surface:#FFFFFF; --surface-2:#E3E8F1; --fg:#0F1B2D; --muted:#52627C;
+  --line:#CBD3E0; --accent:#F24E12; --accent-fg:#FFFFFF; --accent-soft:#FFE5D8;
+  --court:#1D43D6; --court-soft:#DCE6FA; --ok:#1B7A4B; --ok-soft:#D6EFE1; --warn:#8A5A00; --warn-soft:#F7E8C6; --bad:#B3261E;
+  --font-body:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+  --font-display:'Do Hyeon','Noto Sans KR','Apple SD Gothic Neo',sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark) {
+  :root { --bg:#0B1220; --surface:#131C2E; --surface-2:#1B2740; --fg:#E7ECF5; --muted:#9AA9C2; --line:#27344D; --accent:#FF7A3D; --accent-fg:#1A0B02; --accent-soft:#3A2012; --court:#7FA2F5; --court-soft:#1A2848; --ok:#58D08E; --ok-soft:#14362A; --warn:#E8B64D; --warn-soft:#3A2F14; --bad:#FF8A80; color-scheme:dark; }
+}

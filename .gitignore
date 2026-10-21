@@ -1,5 +1,34 @@
-# 카카오 키 (공개 저장소에 올리지 않기)
-**/config.js
-
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+.wrangler/
+.superpowers/
+test-results/
+playwright-report/
 .DS_Store
+local.properties
+*.keystore
+*.jks
+google-services.json
+GoogleService-Info.plist
+supabase/.temp/
+supabase/.branches/
+
+# 기존 카카오 JavaScript 설정 보존
+**/config.js
 Thumbs.db
+04_시안_카카오맵/map.html
+04_시안_카카오맵/assets/
+apps/mobile/android/.gradle/
+apps/mobile/android/build/
+apps/mobile/android/app/build/
+apps/mobile/ios/App/Pods/
+apps/mobile/ios/App/DerivedData/
+apps/mobile/ios/App/App/public/
+apps/mobile/android/app/src/main/assets/public/
+apps/mobile/ios/App/App/capacitor.config.json
+apps/mobile/android/app/src/main/assets/capacitor.config.json

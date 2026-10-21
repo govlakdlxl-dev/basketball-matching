@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">농구 매칭 개발판</string>
+    <string name="title_activity_main">농구 매칭 개발판</string>
+    <string name="package_name">dev.basket.pilot</string>
+    <string name="custom_url_scheme">dev.basket.pilot</string>
+</resources>
